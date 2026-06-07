@@ -35,22 +35,10 @@ class _LeiturasViewState extends State<LeiturasView> {
   bool _isLoading = false;
   int? _loadedGroupId;
   String _query = '';
-  bool _filterInternalPendingOnly = false;
 
   List<PontoConsumoResumo> get _filteredPontos {
     final query = _query.trim().toLowerCase();
     Iterable<PontoConsumoResumo> list = _pontos;
-
-    if (_filterInternalPendingOnly) {
-      final now = DateTime.now();
-      list = list.where((resumo) {
-        if (!resumo.ponto.isInterno) return false;
-        final leitura = resumo.ultimaLeitura;
-        if (leitura == null) return true;
-        return leitura.dataLeitura.year != now.year ||
-            leitura.dataLeitura.month != now.month;
-      });
-    }
 
     if (query.isEmpty) {
       return list.toList();
@@ -339,96 +327,56 @@ class _LeiturasViewState extends State<LeiturasView> {
                         ),
                       ),
                     ),
-                  // Fixed search bar and filter quick toggle at the top
+                  // Fixed search bar at the top
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _searchController,
-                            onChanged: (value) {
-                              setState(() {
-                                _query = value;
-                              });
-                            },
-                            decoration: InputDecoration(
-                              hintText: 'Buscar medidor',
-                              prefixIcon: const Icon(Icons.search),
-                              suffixIcon: _query.isEmpty
-                                  ? null
-                                  : IconButton(
-                                      tooltip: 'Limpar busca',
-                                      onPressed: () {
-                                        _searchController.clear();
-                                        setState(() {
-                                          _query = '';
-                                        });
-                                      },
-                                      icon: const Icon(Icons.close),
-                                    ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                vertical: 10,
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (value) {
+                        setState(() {
+                          _query = value;
+                        });
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Buscar medidor',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: _query.isEmpty
+                            ? null
+                            : IconButton(
+                                tooltip: 'Limpar busca',
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() {
+                                    _query = '';
+                                  });
+                                },
+                                icon: const Icon(Icons.close),
                               ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(
-                                  color: AppColors.primaryText,
-                                  width: 1.5,
-                                ),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(
-                                  color: AppColors.primaryText,
-                                  width: 1.5,
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(
-                                  color: AppColors.primaryAction,
-                                  width: 2,
-                                ),
-                              ),
-                            ),
-                          ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 10,
                         ),
-                        const SizedBox(width: 10),
-                        InkWell(
-                          onTap: () {
-                            setState(() {
-                              _filterInternalPendingOnly =
-                                  !_filterInternalPendingOnly;
-                            });
-                          },
+                        border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            height: 48,
-                            width: 48,
-                            decoration: BoxDecoration(
-                              color: _filterInternalPendingOnly
-                                  ? AppColors.primaryAction
-                                  : AppColors.background,
-                              border: Border.all(
-                                color: _filterInternalPendingOnly
-                                    ? AppColors.primaryAction
-                                    : AppColors.primaryText,
-                                width: 1.5,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              _filterInternalPendingOnly
-                                  ? Icons.lock
-                                  : Icons.lock_open_outlined,
-                              color: _filterInternalPendingOnly
-                                  ? AppColors.background
-                                  : AppColors.primaryText,
-                            ),
+                          borderSide: const BorderSide(
+                            color: AppColors.primaryText,
+                            width: 1.5,
                           ),
                         ),
-                      ],
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(
+                            color: AppColors.primaryText,
+                            width: 1.5,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(
+                            color: AppColors.primaryAction,
+                            width: 2,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                   // Scrollable meter list

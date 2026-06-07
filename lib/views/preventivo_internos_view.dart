@@ -112,8 +112,12 @@ class _PreventivoInternosViewState extends State<PreventivoInternosView> {
 
   @override
   Widget build(BuildContext context) {
+    final hasSelectedGroupInItems = _selectedGroupId == null ||
+        _grupos.any((g) => g.id == _selectedGroupId);
+    final dropdownValue = hasSelectedGroupInItems ? _selectedGroupId : null;
+
     return Scaffold(
-      appBar: const LeituraAppBar(title: 'Trabalho Preventivo'),
+      appBar: const LeituraAppBar(title: 'Medidores Internos'),
       body: SafeArea(
         child: Column(
           children: [
@@ -121,9 +125,9 @@ class _PreventivoInternosViewState extends State<PreventivoInternosView> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: DropdownButtonFormField<int?>(
-                value: _selectedGroupId,
+                value: dropdownValue,
                 decoration: const InputDecoration(
-                  labelText: 'Grupo (Regiao)',
+                  labelText: 'Grupo (Região)',
                   prefixIcon: Icon(Icons.filter_list),
                 ),
                 dropdownColor: AppColors.background,

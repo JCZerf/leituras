@@ -37,8 +37,8 @@ class LeituraAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return AppBar(
       toolbarHeight: _toolbarHeight,
-      backgroundColor: AppColors.primaryAction,
-      foregroundColor: AppColors.background,
+      backgroundColor: AppColors.lightGreenAppBar,
+      foregroundColor: AppColors.primaryText,
       elevation: 2,
       shadowColor: Colors.black54,
       centerTitle: false,
@@ -49,13 +49,13 @@ class LeituraAppBar extends StatelessWidget implements PreferredSizeWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: const TextStyle(
-          color: AppColors.background,
+          color: AppColors.primaryText,
           fontSize: 20,
           fontWeight: FontWeight.w800,
         ),
       ),
-      iconTheme: const IconThemeData(color: AppColors.background),
-      actionsIconTheme: const IconThemeData(color: AppColors.background),
+      iconTheme: const IconThemeData(color: AppColors.primaryText),
+      actionsIconTheme: const IconThemeData(color: AppColors.primaryText),
       actions: actions,
     );
   }

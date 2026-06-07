@@ -81,7 +81,7 @@ class _MainNavigationState extends State<MainNavigation> {
         selectedIndex: _appState.currentTabIndex,
         onDestinationSelected: _appState.selectTab,
         backgroundColor: AppColors.background,
-        indicatorColor: const Color(0x1F0056B3),
+        indicatorColor: const Color(0x1F2E7D32),
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.folder_outlined),
@@ -96,7 +96,7 @@ class _MainNavigationState extends State<MainNavigation> {
           NavigationDestination(
             icon: Icon(Icons.lock_outline),
             selectedIcon: Icon(Icons.lock),
-            label: 'Preventivo',
+            label: 'Internos',
           ),
           NavigationDestination(
             icon: Icon(Icons.build_outlined),

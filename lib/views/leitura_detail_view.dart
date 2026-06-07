@@ -11,6 +11,7 @@ import '../repositories/grupo_repository.dart';
 import '../repositories/historico_leitura_repository.dart';
 import '../repositories/ponto_consumo_repository.dart';
 import '../theme/app_colors.dart';
+import 'estimador_view.dart';
 import 'leitura_app_bar.dart';
 import 'leitura_form_view.dart';
 
@@ -72,7 +73,7 @@ class _LeituraDetailViewState extends State<LeituraDetailView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: LeituraAppBar(
-        title: 'Historico',
+        title: 'Histórico',
         actions: [
           IconButton(
             tooltip: 'Nova leitura',
@@ -97,6 +98,31 @@ class _LeituraDetailViewState extends State<LeituraDetailView> {
                   icon: const Icon(Icons.add),
                   label: const Text('Nova leitura'),
                 ),
+                if (historico.length >= 2) ...[
+                  const SizedBox(height: 12),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      final values = historico
+                          .take(6)
+                          .map((h) => h.valorLeitura)
+                          .toList()
+                          .reversed
+                          .toList();
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => EstimadorView(initialReadings: values),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.background,
+                      foregroundColor: AppColors.primaryAction,
+                      side: const BorderSide(color: AppColors.primaryAction, width: 2),
+                    ),
+                    icon: const Icon(Icons.show_chart),
+                    label: const Text('Ver Estimativa de Consumo'),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 Text(
                   'Linha do tempo',
