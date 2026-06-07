@@ -8,15 +8,15 @@ import 'package:leituras/repositories/app_database.dart';
 import 'package:leituras/repositories/grupo_repository.dart';
 import 'package:leituras/repositories/historico_leitura_repository.dart';
 import 'package:leituras/repositories/ponto_consumo_repository.dart';
-import 'package:leituras/views/home_view.dart';
+import 'package:leituras/views/main_navigation.dart';
 
 void main() {
-  testWidgets('shows create group CTA when there are no groups', (
+  testWidgets('shows no group message on readings tab without selection', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
       MaterialApp(
-        home: HomeView(
+        home: MainNavigation(
           grupoRepository: _FakeGrupoRepository(groups: const []),
           pontoConsumoRepository: _FakePontoConsumoRepository(pontos: const []),
           historicoLeituraRepository: _FakeHistoricoRepository(
@@ -27,11 +27,15 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Crie um grupo para comecar'), findsOneWidget);
-    expect(find.text('Criar grupo'), findsWidgets);
+    await tester.tap(find.text('Leituras'));
+    await tester.pump();
+
+    expect(find.text('Selecione um grupo na aba anterior'), findsOneWidget);
   });
 
-  testWidgets('shows meter with latest reading', (WidgetTester tester) async {
+  testWidgets('selects group and navigates to readings tab', (
+    WidgetTester tester,
+  ) async {
     final group = Grupo(id: 1, nome: 'Bloco A', dataCriacao: _fixedDate);
     final ponto = PontoConsumo(
       id: 1,
@@ -48,7 +52,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        home: HomeView(
+        home: MainNavigation(
           grupoRepository: _FakeGrupoRepository(groups: [group]),
           pontoConsumoRepository: _FakePontoConsumoRepository(
             pontos: [
@@ -63,44 +67,11 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Bloco A'), findsOneWidget);
+    await tester.tap(find.text('Bloco A'));
+    await tester.pump();
+
     expect(find.text('Leitura: 12345'), findsOneWidget);
     expect(find.text('Instalacao: A1'), findsOneWidget);
-  });
-
-  testWidgets('filters meters by installation or meter number', (
-    WidgetTester tester,
-  ) async {
-    final group = Grupo(id: 1, nome: 'Bloco A', dataCriacao: _fixedDate);
-    const pontoA = PontoConsumo(id: 1, grupoId: 1, instalacao: 'A1');
-    const pontoB = PontoConsumo(id: 2, grupoId: 1, numeroMedidor: 'B200');
-
-    await tester.pumpWidget(
-      MaterialApp(
-        home: HomeView(
-          grupoRepository: _FakeGrupoRepository(groups: [group]),
-          pontoConsumoRepository: _FakePontoConsumoRepository(
-            pontos: const [
-              PontoConsumoResumo(ponto: pontoA, ultimaLeitura: null),
-              PontoConsumoResumo(ponto: pontoB, ultimaLeitura: null),
-            ],
-          ),
-          historicoLeituraRepository: _FakeHistoricoRepository(
-            historico: const [],
-          ),
-        ),
-      ),
-    );
-    await tester.pump();
-
-    await tester.enterText(
-      find.byType(TextField),
-      'B200',
-    );
-    await tester.pump();
-
-    expect(find.text('Instalacao: A1'), findsNothing);
-    expect(find.text('Medidor: B200'), findsOneWidget);
   });
 }
 

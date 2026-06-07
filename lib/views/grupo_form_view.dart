@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../models/grupo.dart';
+import '../repositories/grupo_repository.dart';
 import '../theme/app_colors.dart';
-import '../viewmodels/home_view_model.dart';
 import '../viewmodels/leitura_validators.dart';
 
 class GrupoFormView extends StatefulWidget {
-  const GrupoFormView({super.key, required this.viewModel});
+  const GrupoFormView({super.key, required this.grupoRepository});
 
-  final HomeViewModel viewModel;
+  final GrupoRepository grupoRepository;
 
   @override
   State<GrupoFormView> createState() => _GrupoFormViewState();
@@ -38,18 +39,19 @@ class _GrupoFormViewState extends State<GrupoFormView> {
     });
 
     try {
-      await widget.viewModel.createGrupo(
-        nome: _nomeController.text,
-        descricao: _descricaoController.text,
+      await widget.grupoRepository.insert(
+        Grupo(
+          nome: _nomeController.text.trim(),
+          descricao: _optional(_descricaoController.text),
+          dataCriacao: DateTime.now(),
+        ),
       );
       if (mounted) {
         Navigator.of(context).pop(true);
       }
     } catch (error) {
       setState(() {
-        _errorMessage = error is ArgumentError
-            ? error.message?.toString()
-            : 'Nao foi possivel criar o grupo.';
+        _errorMessage = 'Nao foi possivel criar o grupo.';
       });
     } finally {
       if (mounted) {
@@ -58,6 +60,11 @@ class _GrupoFormViewState extends State<GrupoFormView> {
         });
       }
     }
+  }
+
+  String? _optional(String value) {
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
   }
 
   @override

@@ -5,7 +5,7 @@ import 'repositories/grupo_repository.dart';
 import 'repositories/historico_leitura_repository.dart';
 import 'repositories/ponto_consumo_repository.dart';
 import 'theme/app_colors.dart';
-import 'views/home_view.dart';
+import 'views/main_navigation.dart';
 
 void main() {
   runApp(const MyApp());
@@ -81,7 +81,7 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: HomeView(
+      home: MainNavigation(
         grupoRepository: grupoRepository,
         pontoConsumoRepository: pontoConsumoRepository,
         historicoLeituraRepository: historicoLeituraRepository,
