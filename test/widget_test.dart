@@ -8,6 +8,7 @@ import 'package:leituras/repositories/app_database.dart';
 import 'package:leituras/repositories/grupo_repository.dart';
 import 'package:leituras/repositories/historico_leitura_repository.dart';
 import 'package:leituras/repositories/ponto_consumo_repository.dart';
+import 'package:leituras/models/ponto_interno_resumo.dart';
 import 'package:leituras/views/main_navigation.dart';
 
 void main() {
@@ -71,7 +72,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Leitura: 12345'), findsOneWidget);
-    expect(find.text('A1'), findsOneWidget);
+    expect(find.text('Inst. A1'), findsOneWidget);
   });
 }
 
@@ -114,6 +115,14 @@ class _FakePontoConsumoRepository extends PontoConsumoRepository {
       }
     }
     return null;
+  }
+
+  @override
+  Future<List<PontoInternoResumo>> findAllInternosResumo() async {
+    return pontos.map((resumo) => PontoInternoResumo(
+      resumo: resumo,
+      grupoNome: 'Bloco A',
+    )).toList();
   }
 }
 

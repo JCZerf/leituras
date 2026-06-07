@@ -1,5 +1,6 @@
 import '../models/ponto_consumo.dart';
 import '../models/ponto_consumo_resumo.dart';
+import '../models/ponto_interno_resumo.dart';
 import 'app_database.dart';
 
 class PontoConsumoRepository {
@@ -81,5 +82,39 @@ class PontoConsumoRepository {
       [grupoId],
     );
     return result.first['result'] == 1;
+  }
+
+  Future<List<PontoInternoResumo>> findAllInternosResumo() async {
+    final db = await _database.database;
+    final maps = await db.rawQuery(
+      '''
+      SELECT
+        pc.id,
+        pc.grupo_id,
+        g.nome AS grupo_nome,
+        pc.instalacao,
+        pc.numero_medidor,
+        pc.endereco,
+        pc.is_interno,
+        hl.id AS ultima_leitura_id,
+        hl.valor_leitura AS ultima_valor_leitura,
+        hl.data_leitura AS ultima_data_leitura,
+        hl.foto_path AS ultima_foto_path,
+        hl.foto_descricao AS ultima_foto_descricao
+      FROM pontos_consumo pc
+      INNER JOIN grupos g ON g.id = pc.grupo_id
+      LEFT JOIN historico_leituras hl
+        ON hl.id = (
+          SELECT h.id
+          FROM historico_leituras h
+          WHERE h.ponto_consumo_id = pc.id
+          ORDER BY h.data_leitura DESC, h.id DESC
+          LIMIT 1
+        )
+      WHERE pc.is_interno = 1
+      ORDER BY g.nome COLLATE NOCASE ASC, pc.id DESC
+      '''
+    );
+    return maps.map(PontoInternoResumo.fromMap).toList();
   }
 }

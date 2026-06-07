@@ -476,11 +476,6 @@ class _MeterTile extends StatelessWidget {
     final ponto = resumo.ponto;
     final leitura = resumo.ultimaLeitura;
 
-    // Show instalação as primary label when available, otherwise medidor.
-    final primaryLabel = ponto.instalacao != null && ponto.instalacao!.isNotEmpty
-        ? ponto.instalacao!
-        : ponto.numeroMedidor ?? '-';
-
     final readingText = leitura == null
         ? 'Sem leitura'
         : 'Leitura: ${leitura.valorLeitura}';
@@ -500,54 +495,71 @@ class _MeterTile extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(
-                      child: Text(
-                        primaryLabel,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                    if (ponto.instalacao != null && ponto.instalacao!.trim().isNotEmpty)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Inst. ${ponto.instalacao}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: AppColors.primaryText,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          if (ponto.isInterno) ...[
+                            const SizedBox(width: 6),
+                            _buildInternoBadge(),
+                          ],
+                        ],
+                      ),
+                    if (ponto.instalacao != null &&
+                        ponto.instalacao!.trim().isNotEmpty &&
+                        ponto.numeroMedidor != null &&
+                        ponto.numeroMedidor!.trim().isNotEmpty)
+                      const SizedBox(height: 2),
+                    if (ponto.numeroMedidor != null && ponto.numeroMedidor!.trim().isNotEmpty)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Med. ${ponto.numeroMedidor}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: AppColors.primaryText,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          if (ponto.isInterno &&
+                              (ponto.instalacao == null || ponto.instalacao!.trim().isEmpty)) ...[
+                            const SizedBox(width: 6),
+                            _buildInternoBadge(),
+                          ],
+                        ],
+                      ),
+                    if ((ponto.instalacao == null || ponto.instalacao!.trim().isEmpty) &&
+                        (ponto.numeroMedidor == null || ponto.numeroMedidor!.trim().isEmpty))
+                      const Text(
+                        '-',
+                        style: TextStyle(
                           color: AppColors.primaryText,
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-                    ),
-                    if (ponto.isInterno) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryText,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.lock,
-                              color: AppColors.background,
-                              size: 11,
-                            ),
-                            const SizedBox(width: 3),
-                            const Text(
-                              'INTERNO',
-                              style: TextStyle(
-                                color: AppColors.background,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),
@@ -562,7 +574,19 @@ class _MeterTile extends StatelessWidget {
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(width: 2),
+              const SizedBox(width: 4),
+              IconButton(
+                tooltip: 'Mais opcoes',
+                icon: const Icon(
+                  Icons.more_vert,
+                  color: AppColors.secondaryText,
+                  size: 20,
+                ),
+                onPressed: onLongPress,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+              const SizedBox(width: 4),
               const Icon(
                 Icons.chevron_right,
                 color: AppColors.secondaryText,
@@ -571,6 +595,38 @@ class _MeterTile extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildInternoBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 6,
+        vertical: 2,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.primaryText,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.lock,
+            color: AppColors.background,
+            size: 11,
+          ),
+          SizedBox(width: 3),
+          Text(
+            'INTERNO',
+            style: TextStyle(
+              color: AppColors.background,
+              fontSize: 9,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
       ),
     );
   }

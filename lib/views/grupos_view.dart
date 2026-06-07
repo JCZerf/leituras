@@ -342,7 +342,11 @@ class _GroupTile extends StatelessWidget {
                   fontSize: 13,
                 ),
               ),
-        trailing: const Icon(Icons.chevron_right),
+        trailing: IconButton(
+          tooltip: 'Mais opcoes',
+          icon: const Icon(Icons.more_vert),
+          onPressed: onLongPress,
+        ),
       ),
     );
   }

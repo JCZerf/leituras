@@ -8,6 +8,7 @@ import '../viewmodels/app_state.dart';
 import 'ferramentas_view.dart';
 import 'grupos_view.dart';
 import 'leituras_view.dart';
+import 'preventivo_internos_view.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({
@@ -66,6 +67,12 @@ class _MainNavigationState extends State<MainNavigation> {
               pontoConsumoRepository: widget.pontoConsumoRepository,
               historicoLeituraRepository: widget.historicoLeituraRepository,
             ),
+            PreventivoInternosView(
+              appState: _appState,
+              grupoRepository: widget.grupoRepository,
+              pontoConsumoRepository: widget.pontoConsumoRepository,
+              historicoLeituraRepository: widget.historicoLeituraRepository,
+            ),
             const FerramentasView(),
           ],
         ),
@@ -87,8 +94,13 @@ class _MainNavigationState extends State<MainNavigation> {
             label: 'Leituras',
           ),
           NavigationDestination(
-            icon: Icon(Icons.construction_outlined),
-            selectedIcon: Icon(Icons.construction),
+            icon: Icon(Icons.lock_outline),
+            selectedIcon: Icon(Icons.lock),
+            label: 'Preventivo',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.build_outlined),
+            selectedIcon: Icon(Icons.build),
             label: 'Ferramentas',
           ),
         ],
