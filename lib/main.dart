@@ -7,12 +7,21 @@ import 'repositories/ponto_consumo_repository.dart';
 import 'theme/app_colors.dart';
 import 'views/main_navigation.dart';
 
+import 'views/splash_view.dart';
+
 void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  bool _initialized = false;
 
   @override
   Widget build(BuildContext context) {
@@ -81,11 +90,19 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: MainNavigation(
-        grupoRepository: grupoRepository,
-        pontoConsumoRepository: pontoConsumoRepository,
-        historicoLeituraRepository: historicoLeituraRepository,
-      ),
+      home: _initialized
+          ? MainNavigation(
+              grupoRepository: grupoRepository,
+              pontoConsumoRepository: pontoConsumoRepository,
+              historicoLeituraRepository: historicoLeituraRepository,
+            )
+          : SplashView(
+              onInitializationComplete: () {
+                setState(() {
+                  _initialized = true;
+                });
+              },
+            ),
     );
   }
 }

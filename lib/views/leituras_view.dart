@@ -503,25 +503,15 @@ class _MeterTile extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (ponto.instalacao != null && ponto.instalacao!.trim().isNotEmpty)
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'Inst. ${ponto.instalacao}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: AppColors.primaryText,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                          if (ponto.isInterno) ...[
-                            const SizedBox(width: 6),
-                            _buildInternoBadge(),
-                          ],
-                        ],
+                      Text(
+                        'Inst. ${ponto.instalacao}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.primaryText,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     if (ponto.instalacao != null &&
                         ponto.instalacao!.trim().isNotEmpty &&
@@ -529,26 +519,15 @@ class _MeterTile extends StatelessWidget {
                         ponto.numeroMedidor!.trim().isNotEmpty)
                       const SizedBox(height: 2),
                     if (ponto.numeroMedidor != null && ponto.numeroMedidor!.trim().isNotEmpty)
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'Med. ${ponto.numeroMedidor}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: AppColors.primaryText,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                          if (ponto.isInterno &&
-                              (ponto.instalacao == null || ponto.instalacao!.trim().isEmpty)) ...[
-                            const SizedBox(width: 6),
-                            _buildInternoBadge(),
-                          ],
-                        ],
+                      Text(
+                        'Med. ${ponto.numeroMedidor}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.primaryText,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     if ((ponto.instalacao == null || ponto.instalacao!.trim().isEmpty) &&
                         (ponto.numeroMedidor == null || ponto.numeroMedidor!.trim().isEmpty))
@@ -560,6 +539,15 @@ class _MeterTile extends StatelessWidget {
                           fontWeight: FontWeight.w800,
                         ),
                       ),
+                    if (ponto.isInterno) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildInternoBadge(),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
