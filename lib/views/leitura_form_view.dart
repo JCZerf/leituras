@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../models/grupo.dart';
 import '../services/camera_service.dart';
+import '../services/ocr_service.dart';
 import '../models/ponto_consumo.dart';
 import '../repositories/grupo_repository.dart';
 import '../repositories/historico_leitura_repository.dart';
@@ -38,6 +39,7 @@ class _LeituraFormViewState extends State<LeituraFormView> {
   final _formKey = GlobalKey<FormState>();
   late final LeituraFormViewModel _viewModel;
   late final CameraService _cameraService;
+  late final OcrService _ocrService;
   late final TextEditingController _instalacaoController;
   late final TextEditingController _numeroMedidorController;
   late final TextEditingController _leituraController;
@@ -48,6 +50,10 @@ class _LeituraFormViewState extends State<LeituraFormView> {
   String? _fotoPath;
   bool _saved = false;
   bool _isInterno = false;
+
+  int? _ultimoValorLeitura;
+  bool _isOcrProcessing = false;
+  List<int> _ocrSuggestions = [];
 
   bool get _isNovoLancamento => widget.ponto != null;
 
@@ -61,6 +67,7 @@ class _LeituraFormViewState extends State<LeituraFormView> {
       historicoLeituraRepository: widget.historicoLeituraRepository,
     );
     _cameraService = CameraService();
+    _ocrService = OcrService();
     _instalacaoController = TextEditingController(
       text: ponto?.instalacao ?? '',
     );
@@ -70,6 +77,18 @@ class _LeituraFormViewState extends State<LeituraFormView> {
     _leituraController = TextEditingController();
     _enderecoController = TextEditingController(text: ponto?.endereco ?? '');
     _fotoDescricaoController = TextEditingController();
+
+    if (ponto != null && ponto.id != null) {
+      widget.historicoLeituraRepository
+          .findByPontoConsumoId(ponto.id!)
+          .then((history) {
+        if (history.isNotEmpty && mounted) {
+          setState(() {
+            _ultimoValorLeitura = history.first.valorLeitura;
+          });
+        }
+      });
+    }
   }
 
   @override
@@ -91,7 +110,35 @@ class _LeituraFormViewState extends State<LeituraFormView> {
       if (path != null) {
         setState(() {
           _fotoPath = path;
+          _isOcrProcessing = true;
+          _ocrSuggestions = [];
         });
+
+        try {
+          final rawText = await _ocrService.recognizeText(path);
+          if (mounted) {
+            setState(() {
+              _fotoDescricaoController.text = rawText;
+            });
+
+            final ocrResult = _viewModel.processOcrText(rawText, _ultimoValorLeitura);
+            setState(() {
+              if (ocrResult.autoFillValue != null) {
+                _leituraController.text = ocrResult.autoFillValue!.toString();
+              } else {
+                _ocrSuggestions = ocrResult.suggestions;
+              }
+            });
+          }
+        } catch (ocrError) {
+          debugPrint('Erro no processamento OCR: $ocrError');
+        } finally {
+          if (mounted) {
+            setState(() {
+              _isOcrProcessing = false;
+            });
+          }
+        }
       }
     } catch (e) {
       setState(() {
@@ -107,6 +154,7 @@ class _LeituraFormViewState extends State<LeituraFormView> {
       } catch (_) {}
       setState(() {
         _fotoPath = null;
+        _ocrSuggestions = [];
       });
     }
   }
@@ -179,154 +227,248 @@ class _LeituraFormViewState extends State<LeituraFormView> {
       body: SafeArea(
         child: Form(
           key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
+          child: Column(
             children: [
-              _GrupoBanner(nome: widget.grupo.nome),
-              const SizedBox(height: 16),
-              if (_isNovoLancamento)
-                _PontoBanner(ponto: widget.ponto!)
-              else ...[
-                TextFormField(
-                  controller: _instalacaoController,
-                  decoration: const InputDecoration(
-                    labelText: 'Instalacao',
-                    prefixIcon: Icon(Icons.home_work_outlined),
-                  ),
-                  textInputAction: TextInputAction.next,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _numeroMedidorController,
-                  decoration: const InputDecoration(
-                    labelText: 'Numero do medidor',
-                    prefixIcon: Icon(Icons.speed_outlined),
-                  ),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp('[a-zA-Z0-9]')),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    _GrupoBanner(nome: widget.grupo.nome),
+                    const SizedBox(height: 16),
+                    if (_isNovoLancamento)
+                      _PontoBanner(ponto: widget.ponto!)
+                    else ...[
+                      TextFormField(
+                        controller: _instalacaoController,
+                        decoration: const InputDecoration(
+                          labelText: 'Instalacao',
+                          prefixIcon: Icon(Icons.home_work_outlined),
+                        ),
+                        textInputAction: TextInputAction.next,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _numeroMedidorController,
+                        decoration: const InputDecoration(
+                          labelText: 'Numero do medidor',
+                          prefixIcon: Icon(Icons.speed_outlined),
+                        ),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(RegExp('[a-zA-Z0-9]')),
+                        ],
+                        textInputAction: TextInputAction.next,
+                        validator: (value) =>
+                            LeituraValidators.numeroMedidor(value ?? ''),
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _enderecoController,
+                        decoration: const InputDecoration(
+                          labelText: 'Endereco',
+                          helperText: 'Importante: Detalhe bem o local (ex: Apto 302, Fundo do galpao trancado)',
+                          helperMaxLines: 2,
+                          prefixIcon: Icon(Icons.location_on_outlined),
+                        ),
+                        textCapitalization: TextCapitalization.sentences,
+                      ),
+                      const SizedBox(height: 16),
+                      SwitchListTile(
+                        title: const Text(
+                          'Este medidor e INTERNO?',
+                          style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.primaryText),
+                        ),
+                        subtitle: const Text(
+                          'Exige agendamento / contato previo',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        value: _isInterno,
+                        onChanged: (val) {
+                          setState(() {
+                            _isInterno = val;
+                          });
+                        },
+                        activeColor: AppColors.primaryAction,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _leituraController,
+                      decoration: const InputDecoration(
+                        labelText: 'Valor da leitura',
+                        prefixIcon: Icon(Icons.pin_outlined),
+                      ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(5),
+                      ],
+                      validator: (value) => LeituraValidators.leitura(value ?? ''),
+                    ),
+                    const SizedBox(height: 16),
+                    if (_fotoPath == null)
+                      OutlinedButton.icon(
+                        onPressed: _takePhoto,
+                        icon: const Icon(Icons.camera_alt_outlined),
+                        label: const Text('Tirar Foto do Relogio'),
+                      )
+                    else
+                      Container(
+                        height: 100,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: AppColors.primaryText, width: 1.5),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            ClipRRect(
+                              borderRadius: const BorderRadius.horizontal(left: Radius.circular(6)),
+                              child: Image.file(
+                                File(_fotoPath!),
+                                width: 100,
+                                height: 100,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Expanded(
+                              child: Text(
+                                'Foto capturada',
+                                style: TextStyle(fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: 'Excluir foto',
+                              onPressed: _deletePhoto,
+                              icon: const Icon(Icons.delete_outline, color: AppColors.error),
+                            ),
+                          ],
+                        ),
+                      ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _fotoDescricaoController,
+                      decoration: const InputDecoration(
+                        labelText: 'Descricao da foto',
+                        prefixIcon: Icon(Icons.image_outlined),
+                      ),
+                      maxLines: 3,
+                    ),
+                    if (_errorMessage != null) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        _errorMessage!,
+                        style: const TextStyle(
+                          color: AppColors.error,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed: _isSaving ? null : _save,
+                      icon: _isSaving
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.save_outlined),
+                      label: Text(
+                        _isNovoLancamento ? 'Salvar leitura' : 'Salvar medidor',
+                      ),
+                    ),
                   ],
-                  textInputAction: TextInputAction.next,
-                  validator: (value) =>
-                      LeituraValidators.numeroMedidor(value ?? ''),
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _enderecoController,
-                  decoration: const InputDecoration(
-                    labelText: 'Endereco',
-                    helperText: 'Importante: Detalhe bem o local (ex: Apto 302, Fundo do galpao trancado)',
-                    helperMaxLines: 2,
-                    prefixIcon: Icon(Icons.location_on_outlined),
-                  ),
-                  textCapitalization: TextCapitalization.sentences,
-                ),
-                const SizedBox(height: 16),
-                SwitchListTile(
-                  title: const Text(
-                    'Este medidor e INTERNO?',
-                    style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.primaryText),
-                  ),
-                  subtitle: const Text(
-                    'Exige agendamento / contato previo',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  value: _isInterno,
-                  onChanged: (val) {
-                    setState(() {
-                      _isInterno = val;
-                    });
-                  },
-                  activeColor: AppColors.primaryAction,
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ],
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _leituraController,
-                decoration: const InputDecoration(
-                  labelText: 'Valor da leitura',
-                  prefixIcon: Icon(Icons.pin_outlined),
-                ),
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(5),
-                ],
-                validator: (value) => LeituraValidators.leitura(value ?? ''),
               ),
-              const SizedBox(height: 16),
-              if (_fotoPath == null)
-                OutlinedButton.icon(
-                  onPressed: _takePhoto,
-                  icon: const Icon(Icons.camera_alt_outlined),
-                  label: const Text('Tirar Foto do Relogio'),
-                )
-              else
+              if (_isOcrProcessing)
                 Container(
-                  height: 100,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: AppColors.primaryText, width: 1.5),
-                    borderRadius: BorderRadius.circular(8),
+                  decoration: const BoxDecoration(
+                    color: AppColors.background,
+                    border: Border(
+                      top: BorderSide(color: AppColors.primaryText, width: 1.5),
+                    ),
                   ),
-                  child: Row(
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      ClipRRect(
-                        borderRadius: const BorderRadius.horizontal(left: Radius.circular(6)),
-                        child: Image.file(
-                          File(_fotoPath!),
-                          width: 100,
-                          height: 100,
-                          fit: BoxFit.cover,
+                      SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: AppColors.primaryAction,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Text(
-                          'Foto capturada',
-                          style: TextStyle(fontWeight: FontWeight.w700),
+                      SizedBox(width: 12),
+                      Text(
+                        'Processando imagem...',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primaryText,
                         ),
-                      ),
-                      IconButton(
-                        tooltip: 'Excluir foto',
-                        onPressed: _deletePhoto,
-                        icon: const Icon(Icons.delete_outline, color: AppColors.error),
                       ),
                     ],
                   ),
                 ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _fotoDescricaoController,
-                decoration: const InputDecoration(
-                  labelText: 'Descricao da foto',
-                  prefixIcon: Icon(Icons.image_outlined),
-                ),
-                maxLines: 3,
-              ),
-              if (_errorMessage != null) ...[
-                const SizedBox(height: 16),
-                Text(
-                  _errorMessage!,
-                  style: const TextStyle(
-                    color: AppColors.error,
-                    fontWeight: FontWeight.w700,
+              if (!_isOcrProcessing && _ocrSuggestions.isNotEmpty)
+                Container(
+                  decoration: const BoxDecoration(
+                    color: AppColors.background,
+                    border: Border(
+                      top: BorderSide(color: AppColors.primaryText, width: 1.5),
+                    ),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Sugestões encontradas na foto:',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.secondaryText,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: _ocrSuggestions.map((suggestion) {
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: ActionChip(
+                                backgroundColor: AppColors.background,
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                side: const BorderSide(color: AppColors.primaryAction, width: 2),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                label: Text(
+                                  '[$suggestion]',
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w900,
+                                    color: AppColors.primaryAction,
+                                  ),
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _leituraController.text = suggestion.toString();
+                                  });
+                                },
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: _isSaving ? null : _save,
-                icon: _isSaving
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.save_outlined),
-                label: Text(
-                  _isNovoLancamento ? 'Salvar leitura' : 'Salvar medidor',
-                ),
-              ),
             ],
           ),
         ),
