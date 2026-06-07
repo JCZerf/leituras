@@ -81,7 +81,7 @@ class _MainNavigationState extends State<MainNavigation> {
         selectedIndex: _appState.currentTabIndex,
         onDestinationSelected: _appState.selectTab,
         backgroundColor: AppColors.background,
-        indicatorColor: const Color(0x1F2E7D32),
+        indicatorColor: const Color(0x1F007A52),
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.folder_outlined),

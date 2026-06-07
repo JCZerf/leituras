@@ -25,12 +25,6 @@ class FerramentasView extends StatelessWidget {
                 );
               },
             ),
-            const SizedBox(height: 10),
-            const _ToolTile(
-              icon: Icons.calculate_outlined,
-              title: 'Calculadora',
-              subtitle: 'Apoio rápido para conferências em campo.',
-            ),
           ],
         ),
       ),

@@ -591,16 +591,18 @@ class _EmptyMeters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        border: Border.all(color: AppColors.primaryText, width: 1.5),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: const Text(
-        'Nenhum medidor neste grupo.',
-        textAlign: TextAlign.center,
-        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(24),
+        child: Text(
+          'Nenhum medidor neste grupo.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: AppColors.secondaryText,
+          ),
+        ),
       ),
     );
   }
@@ -611,16 +613,18 @@ class _EmptySearch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        border: Border.all(color: AppColors.primaryText, width: 1.5),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: const Text(
-        'Nenhum medidor encontrado.',
-        textAlign: TextAlign.center,
-        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(24),
+        child: Text(
+          'Nenhum medidor encontrado.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: AppColors.secondaryText,
+          ),
+        ),
       ),
     );
   }

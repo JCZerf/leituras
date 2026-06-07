@@ -384,19 +384,16 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return const Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            border: Border.all(color: AppColors.primaryText, width: 1.5),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Text(
-            'Nenhum medidor interno pendente.',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+        padding: EdgeInsets.all(24),
+        child: Text(
+          'Nenhum medidor interno pendente.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: AppColors.secondaryText,
           ),
         ),
       ),
