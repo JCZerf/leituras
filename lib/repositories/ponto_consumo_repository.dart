@@ -17,6 +17,7 @@ class PontoConsumoRepository {
         pc.instalacao,
         pc.numero_medidor,
         pc.endereco,
+        pc.is_interno,
         hl.id AS ultima_leitura_id,
         hl.valor_leitura AS ultima_valor_leitura,
         hl.data_leitura AS ultima_data_leitura,

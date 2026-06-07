@@ -47,6 +47,7 @@ class _LeituraFormViewState extends State<LeituraFormView> {
   String? _errorMessage;
   String? _fotoPath;
   bool _saved = false;
+  bool _isInterno = false;
 
   bool get _isNovoLancamento => widget.ponto != null;
 
@@ -147,6 +148,7 @@ class _LeituraFormViewState extends State<LeituraFormView> {
           endereco: _enderecoController.text,
           fotoPath: _fotoPath,
           fotoDescricao: _fotoDescricaoController.text,
+          isInterno: _isInterno,
         );
       }
       _saved = true;
@@ -212,9 +214,30 @@ class _LeituraFormViewState extends State<LeituraFormView> {
                   controller: _enderecoController,
                   decoration: const InputDecoration(
                     labelText: 'Endereco',
+                    helperText: 'Importante: Detalhe bem o local (ex: Apto 302, Fundo do galpao trancado)',
+                    helperMaxLines: 2,
                     prefixIcon: Icon(Icons.location_on_outlined),
                   ),
                   textCapitalization: TextCapitalization.sentences,
+                ),
+                const SizedBox(height: 16),
+                SwitchListTile(
+                  title: const Text(
+                    'Este medidor e INTERNO?',
+                    style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.primaryText),
+                  ),
+                  subtitle: const Text(
+                    'Exige agendamento / contato previo',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  value: _isInterno,
+                  onChanged: (val) {
+                    setState(() {
+                      _isInterno = val;
+                    });
+                  },
+                  activeColor: AppColors.primaryAction,
+                  contentPadding: EdgeInsets.zero,
                 ),
               ],
               const SizedBox(height: 16),

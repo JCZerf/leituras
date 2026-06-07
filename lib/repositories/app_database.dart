@@ -7,7 +7,7 @@ class AppDatabase {
       _databasePath = databasePath;
 
   static const String databaseName = 'leituras.db';
-  static const int databaseVersion = 2;
+  static const int databaseVersion = 3;
 
   final DatabaseFactory? _databaseFactory;
   final String? _databasePath;
@@ -36,6 +36,9 @@ class AppDatabase {
         onUpgrade: (db, oldVersion, newVersion) async {
           if (oldVersion < 2) {
             await _migrateToVersion2(db);
+          }
+          if (oldVersion < 3) {
+            await _migrateToVersion3(db);
           }
         },
       ),
@@ -71,6 +74,7 @@ class AppDatabase {
         instalacao TEXT,
         numero_medidor TEXT,
         endereco TEXT,
+        is_interno INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY (grupo_id) REFERENCES grupos (id) ON DELETE RESTRICT
       )
     ''');
@@ -134,6 +138,12 @@ class AppDatabase {
     }
 
     await db.execute('DROP TABLE leituras');
+  }
+
+  Future<void> _migrateToVersion3(Database db) async {
+    await db.execute(
+      'ALTER TABLE pontos_consumo ADD COLUMN is_interno INTEGER NOT NULL DEFAULT 0',
+    );
   }
 
   String _formatSqliteDateTime(DateTime value) {

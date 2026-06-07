@@ -30,6 +30,7 @@ class _PontoEditFormViewState extends State<PontoEditFormView> {
   late final TextEditingController _enderecoController;
   bool _isSaving = false;
   String? _errorMessage;
+  bool _isInterno = false;
 
   @override
   void initState() {
@@ -43,6 +44,7 @@ class _PontoEditFormViewState extends State<PontoEditFormView> {
     _enderecoController = TextEditingController(
       text: widget.ponto.endereco ?? '',
     );
+    _isInterno = widget.ponto.isInterno;
   }
 
   @override
@@ -76,6 +78,7 @@ class _PontoEditFormViewState extends State<PontoEditFormView> {
         instalacao: _optional(_instalacaoController.text),
         numeroMedidor: _optional(_numeroMedidorController.text),
         endereco: _optional(_enderecoController.text),
+        isInterno: _isInterno,
       );
       await widget.pontoConsumoRepository.update(updated);
       if (mounted) {
@@ -136,9 +139,30 @@ class _PontoEditFormViewState extends State<PontoEditFormView> {
                 controller: _enderecoController,
                 decoration: const InputDecoration(
                   labelText: 'Endereco',
+                  helperText: 'Importante: Detalhe bem o local (ex: Apto 302, Fundo do galpao trancado)',
+                  helperMaxLines: 2,
                   prefixIcon: Icon(Icons.location_on_outlined),
                 ),
                 textCapitalization: TextCapitalization.sentences,
+              ),
+              const SizedBox(height: 16),
+              SwitchListTile(
+                title: const Text(
+                  'Este medidor e INTERNO?',
+                  style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.primaryText),
+                ),
+                subtitle: const Text(
+                  'Exige agendamento / contato previo',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                value: _isInterno,
+                onChanged: (val) {
+                  setState(() {
+                    _isInterno = val;
+                  });
+                },
+                activeColor: AppColors.primaryAction,
+                contentPadding: EdgeInsets.zero,
               ),
               if (_errorMessage != null) ...[
                 const SizedBox(height: 16),

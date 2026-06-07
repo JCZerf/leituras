@@ -5,6 +5,7 @@ class PontoConsumo {
     this.instalacao,
     this.numeroMedidor,
     this.endereco,
+    this.isInterno = false,
   });
 
   final int? id;
@@ -12,6 +13,7 @@ class PontoConsumo {
   final String? instalacao;
   final String? numeroMedidor;
   final String? endereco;
+  final bool isInterno;
 
   PontoConsumo copyWith({
     int? id,
@@ -19,6 +21,7 @@ class PontoConsumo {
     String? instalacao,
     String? numeroMedidor,
     String? endereco,
+    bool? isInterno,
   }) {
     return PontoConsumo(
       id: id ?? this.id,
@@ -26,6 +29,7 @@ class PontoConsumo {
       instalacao: instalacao ?? this.instalacao,
       numeroMedidor: numeroMedidor ?? this.numeroMedidor,
       endereco: endereco ?? this.endereco,
+      isInterno: isInterno ?? this.isInterno,
     );
   }
 
@@ -36,6 +40,7 @@ class PontoConsumo {
       'instalacao': instalacao,
       'numero_medidor': numeroMedidor,
       'endereco': endereco,
+      'is_interno': isInterno ? 1 : 0,
     };
   }
 
@@ -46,6 +51,7 @@ class PontoConsumo {
       instalacao: map['instalacao'] as String?,
       numeroMedidor: map['numero_medidor'] as String?,
       endereco: map['endereco'] as String?,
+      isInterno: (map['is_interno'] as int? ?? 0) == 1,
     );
   }
 }

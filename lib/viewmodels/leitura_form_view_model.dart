@@ -26,6 +26,7 @@ class LeituraFormViewModel {
     String? endereco,
     String? fotoPath,
     String? fotoDescricao,
+    bool isInterno = false,
   }) async {
     final errors = [
       LeituraValidators.grupo(grupoId),
@@ -52,6 +53,7 @@ class LeituraFormViewModel {
         instalacao: _optional(instalacao),
         numeroMedidor: _optional(numeroMedidor),
         endereco: _optional(endereco),
+        isInterno: isInterno,
       ),
     );
     await addHistorico(
