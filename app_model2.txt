@@ -1,0 +1,31 @@
+Atue como um desenvolvedor Flutter Sênior. Com base na arquitetura MVVM e no banco de dados SQLite já definidos para o aplicativo "Leituras", implemente agora o escopo da SEGUNDA FUNCIONALIDADE: Captura de Foto e Armazenamento Isolado.
+
+O objetivo é permitir que o usuário tire fotos dos medidores/leituras por dentro do app, salvando-as de forma totalmente privada e invisível na galeria nativa do celular, vinculando o caminho do arquivo ao banco de dados.
+
+1. PACOTES ADICIONAIS REQUERIDOS:
+- image_picker (para controle e captura da câmera nativa)
+- path_provider (para acessar os diretórios de armazenamento privados do sistema operacional)
+- path (para manipulação segura de caminhos e extensões de arquivos)
+
+2. DIRETRIZES DE ARMAZENAMENTO (ISOLAMENTO DE MÍDIA):
+- As imagens NÃO devem ser salvas na galeria pública do dispositivo (DCIM / Pictures) para evitar poluição visual e deleções acidentais pelo usuário.
+- Todas as fotos tiradas devem ser copiadas para o Diretório de Documentos do Aplicativo (App-Specific Storage), obtido via `getApplicationDocumentsDirectory()`.
+
+3. FLUXO LOGÍCO DA CAPTURA (SERVICE / REPOSITORY):
+Ao acionar a câmera pelo aplicativo, a LLM deve implementar um fluxo que realize os seguintes passos:
+a) Capturar a imagem utilizando o `ImagePicker` com fonte `ImageSource.camera`.
+b) Obter o diretório seguro do aplicativo usando `getApplicationDocumentsDirectory()`.
+c) Gerar um nome de arquivo único e padronizado para evitar sobrescritas, utilizando a estrutura: 'leitura_TIMESTAMP.jpg' (ex: leitura_20260607_161400.jpg).
+d) Mover/Salvar o arquivo final para dentro da pasta segura do aplicativo.
+e) Retornar a String do caminho absoluto do arquivo (`file.path`) para ser armazenada no banco.
+
+4. ATUALIZAÇÃO DA PERSISTÊNCIA (SQLite):
+- Quando o formulário de leitura for salvo, o caminho absoluto gerado no passo anterior deve ser gravado na coluna `foto_path` da tabela `leituras`.
+- Se o usuário não tirar uma foto, o campo `foto_path` deve persistir como NULL (mantendo o comportamento opcional).
+- O campo `foto_descricao` (texto opcional) também deve ser salvo normalmente junto com o registro.
+
+5. COMPORTAMENTO DA INTERFACE (UI):
+- Formulário de Leitura: Adicionar um componente visual de botão/card para "Tirar Foto". Se a foto for tirada com sucesso, exibir uma miniatura (thumbnail) prévia da imagem no próprio formulário com um botão para "Remover Foto" (limpar o estado), caso o usuário queira bater outra.
+- Tela de Detalhes: Adicionar um widget `Image.file(File(leitura.foto_path))` condicional. Se `foto_path` não for nulo, renderizar a imagem salva em tamanho expandido abaixo dos identificadores técnicos, junto com a `foto_descricao` (se houver).
+
+Gere o código do serviço de câmera, atualize o ViewModel responsável pelo formulário de leitura incluindo as novas validações/estados e monte os componentes visuais de alto contraste para exibição e captura da imagem.

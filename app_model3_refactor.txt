@@ -1,0 +1,33 @@
+Atue como um desenvolvedor Flutter Sênior. Precisamos refatorar a estrutura do banco de dados SQLite do app "Leituras" para suportar um HISTÓRICO COMPLETO de lançamentos, garantindo que as leituras antigas não sejam sobrescritas quando um novo valor for inserido no mesmo local.
+
+Para isso, divida a tabela atual em duas entidades relacionadas (Pontos de Consumo e Histórico de Leituras).
+
+1. NOVA ESTRUTURA DO BANCO DE DADOS (SQLite):
+
+Tabela 'pontos_consumo' (Representa o local fixo/relógio):
+- id: INTEGER PRIMARY KEY AUTOINCREMENT
+- grupo_id: INTEGER NOT NULL (Chave Estrangeira para a tabela 'grupos' ON DELETE RESTRICT)
+- instalacao: TEXT (Opcional, condicionado à regra de pelo menos um identificador)
+- numero_medidor: TEXT (Opcional, condicionado à regra de pelo menos um identificador)
+- endereco: TEXT (Opcional)
+- FOREIGN KEY (grupo_id) REFERENCES grupos (id) ON DELETE RESTRICT
+
+Tabela 'historico_leituras' (Representa os lançamentos de fato):
+- id: INTEGER PRIMARY KEY AUTOINCREMENT
+- ponto_consumo_id: INTEGER NOT NULL (Chave Estrangeira vinculando ao local fixo)
+- valor_leitura: INTEGER NOT NULL (O inteiro de 4 ou 5 dígitos)
+- data_leitura: TEXT NOT NULL (Data e hora automática do lançamento: YYYY-MM-DD HH:MM:SS)
+- foto_path: TEXT (Opcional, caminho privado da foto)
+- foto_descricao: TEXT (Opcional, descrição da imagem)
+- FOREIGN KEY (ponto_consumo_id) REFERENCES pontos_consumo (id) ON DELETE CASCADE
+
+2. REGRAS DE NEGÓCIO E INTEGRIDADE RELACIONAL:
+- Validação de Identificadores: Na tabela 'pontos_consumo', continua valendo a regra: pelo menos 'instalacao' ou 'numero_medidor' deve ser preenchido.
+- Cascata controlada: Se um 'ponto_consumo' for excluído, todas as leituras do histórico atreladas a ele serão excluídas automaticamente (`ON DELETE CASCADE`).
+
+3. MUDANÇA NA INTERFACE (UI):
+- Tela Inicial / Lista por Bloco: Em vez de listar "leituras" diretamente, a lista do bloco vai exibir os 'pontos_consumo' cadastrados. O card deve mostrar a ÚLTIMA leitura lançada para aquele ponto (buscada via subquery `MAX(data_leitura)` ou ordenação decrescente).
+- Tela de Detalhes: Ao tocar em um card de ponto de consumo, o app abrirá a tela de detalhes exibindo os identificadores fixos no topo e, logo abaixo, uma Lista/Linha do Tempo (Timeline) em ordem cronológica decrescente mostrando todas as leituras já lançadas para aquele medidor com suas respectivas datas e fotos.
+- Novo Lançamento: A ação de "Editar/Novo Lançamento" agora apenas adicionará uma nova linha na tabela 'historico_leituras', preservando o passado.
+
+Refatore os Models em Dart, os scripts de criação de tabelas do SQLite Helper e ajuste as Views para refletir essa separação sem perder o padrão visual de alto contraste.

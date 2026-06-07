@@ -1,0 +1,40 @@
+Atue como um desenvolvedor Flutter sênior. Vamos iniciar o desenvolvimento do aplicativo "Leituras". O banco de dados local utilizado será o SQLite (utilizando pacotes como sqflite ou drift). 
+
+Por favor, implemente a primeira tela e a estrutura do banco com base nos seguintes requisitos:
+
+1. ESCOPO DA PRIMEIRA TELA:
+- A tela principal deve permitir Criar, Editar e Visualizar as leituras.
+- A visualização será em formato de Lista de Cards, filtrados pelo "Grupo" selecionado.
+- Cada Card deve exibir de forma clara: Identificador(es) disponível(is) (Instalação e/ou Número do Medidor), o valor da Leitura e o Endereço (se houver).
+- NOTA: Embora o modelo suporte imagem, NÃO é necessário exibir a foto nesta tela agora. Focaremos na exibição da imagem em uma próxima implementação.
+
+2. MODELO DE DADOS (Tabela 'leituras'):
+- id: String/Integer (Chave primária autoincrementável/UUID).
+- instalacao: String (Opcional, mas condicionado à regra abaixo).
+- numero_medidor: String (Opcional, aceita letras e números, condicionado à regra abaixo).
+- leitura: Integer (Obrigatório, deve ser um número inteiro de 4 ou 5 dígitos).
+- grupo: String (Obrigatório, usado para organizar as leituras por blocos de trabalho).
+- endereco: String (Opcional, pode ser inserido manualmente ou via API de localização futuramente).
+- foto_path: String (Opcional, armazenará o caminho local da imagem da leitura no dispositivo).
+- foto_descricao: String (Opcional, texto descritivo para registrar a leitura que está visível na imagem).
+
+3. REGRAS DE VALIDAÇÃO (LOGICA DE NEGÓCIO):
+- Validação de Identificadores: O usuário não precisa preencher "instalacao" E "numero_medidor" obrigatoriamente juntos, mas pelo menos UM dos dois campos DEVE ser preenchido para salvar o registro (Identificador Forte).
+- Validação da Leitura: O campo de leitura aceita apenas inteiros com tamanho exato de 4 ou 5 dígitos.
+
+Gere o código do modelo em Dart, a estrutura de criação da tabela em SQL para o SQLite e o layout básico da tela principal em Flutter utilizando componentes de alto contraste.
+
+4. ESTRUTURA E RELACIONAMENTO DE GRUPOS (Tabela 'grupos'):
+Para evitar buscas manuais exaustivas, o aplicativo deve trabalhar com uma estrutura de pastas/blocos. Crie uma tabela separada para os Grupos com o seguinte modelo:
+- id: String/Integer (Chave primária).
+- nome: String (Obrigatório, ex: "Bloco A", "Fábrica Centro").
+- descricao: String (Opcional).
+- data_criacao: DateTime/String (Obrigatório).
+
+RELACIONAMENTO NO BANCO (Chave Estrangeira):
+- Na tabela 'leituras', remova o campo 'grupo' como string simples e adicione o campo 'grupo_id' como Chave Estrangeira (FOREIGN KEY) apontando para a tabela 'grupos'.
+- A validação deve garantir que nenhuma leitura seja criada sem estar vinculada a um grupo existente.
+
+FLUXO DA INTERFACE (UI):
+- A tela inicial do app deve permitir a criação de novos Grupos.
+- Ao selecionar ou filtrar por um Grupo específico, a interface deve realizar uma consulta no SQLite filtrando as leituras pelo 'grupo_id' correspondente, exibindo apenas os cards daquele bloco de trabalho.
