@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/grupo.dart';
 import '../repositories/grupo_repository.dart';
+import '../repositories/ponto_consumo_repository.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/app_state.dart';
 import 'grupo_form_view.dart';
@@ -12,10 +13,12 @@ class GruposView extends StatefulWidget {
     super.key,
     required this.appState,
     required this.grupoRepository,
+    required this.pontoConsumoRepository,
   });
 
   final AppState appState;
   final GrupoRepository grupoRepository;
+  final PontoConsumoRepository pontoConsumoRepository;
 
   @override
   State<GruposView> createState() => _GruposViewState();
@@ -75,6 +78,142 @@ class _GruposViewState extends State<GruposView> {
     }
   }
 
+  Future<void> _editGroup(Grupo grupo) async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => GrupoFormView(
+          grupoRepository: widget.grupoRepository,
+          grupo: grupo,
+        ),
+      ),
+    );
+    if (saved == true) {
+      await _loadGroups();
+    }
+  }
+
+  Future<void> _deleteGroup(Grupo grupo) async {
+    // Check if group has meters linked via ON DELETE RESTRICT.
+    final hasMedidores = await widget.pontoConsumoRepository.existsByGrupoId(
+      grupo.id!,
+    );
+
+    if (!mounted) return;
+
+    if (hasMedidores) {
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Exclusao bloqueada'),
+          content: const Text(
+            'Nao e possivel excluir um grupo com medidores ativos. '
+            'Remova os medidores antes de excluir o grupo.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Entendi'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Excluir grupo'),
+        content: Text('Deseja excluir o grupo "${grupo.nome}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await widget.grupoRepository.delete(grupo.id!);
+      // If the deleted group was selected, clear the selection.
+      if (widget.appState.selectedGroupId == grupo.id) {
+        widget.appState.clearSelectedGroup();
+      }
+      await _loadGroups();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            error is ArgumentError
+                ? error.message.toString()
+                : 'Erro ao excluir o grupo.',
+          ),
+        ),
+      );
+    }
+  }
+
+  void _showActions(Grupo grupo) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                grupo.nome,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primaryText,
+                ),
+              ),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: const Text(
+                'Editar cadastro',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _editGroup(grupo);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: AppColors.error),
+              title: const Text(
+                'Excluir grupo',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.error,
+                ),
+              ),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _deleteGroup(grupo);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final grupos = _filteredGroups;
@@ -91,6 +230,7 @@ class _GruposViewState extends State<GruposView> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'fab_grupos',
         onPressed: _createGroup,
         backgroundColor: AppColors.primaryAction,
         foregroundColor: AppColors.background,
@@ -136,6 +276,7 @@ class _GruposViewState extends State<GruposView> {
                         grupo: grupo,
                         isSelected: widget.appState.selectedGroupId == grupo.id,
                         onTap: () => widget.appState.selectGroup(grupo),
+                        onLongPress: () => _showActions(grupo),
                       ),
                     ),
                 ],
@@ -150,11 +291,13 @@ class _GroupTile extends StatelessWidget {
     required this.grupo,
     required this.isSelected,
     required this.onTap,
+    required this.onLongPress,
   });
 
   final Grupo grupo;
   final bool isSelected;
   final VoidCallback onTap;
+  final VoidCallback onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -171,6 +314,7 @@ class _GroupTile extends StatelessWidget {
       ),
       child: ListTile(
         onTap: onTap,
+        onLongPress: onLongPress,
         minVerticalPadding: 8,
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
         leading: Icon(

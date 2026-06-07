@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../models/grupo.dart';
+import '../services/camera_service.dart';
 import '../models/ponto_consumo.dart';
 import '../repositories/grupo_repository.dart';
 import '../repositories/historico_leitura_repository.dart';
@@ -34,6 +37,7 @@ class LeituraFormView extends StatefulWidget {
 class _LeituraFormViewState extends State<LeituraFormView> {
   final _formKey = GlobalKey<FormState>();
   late final LeituraFormViewModel _viewModel;
+  late final CameraService _cameraService;
   late final TextEditingController _instalacaoController;
   late final TextEditingController _numeroMedidorController;
   late final TextEditingController _leituraController;
@@ -41,6 +45,8 @@ class _LeituraFormViewState extends State<LeituraFormView> {
   late final TextEditingController _fotoDescricaoController;
   bool _isSaving = false;
   String? _errorMessage;
+  String? _fotoPath;
+  bool _saved = false;
 
   bool get _isNovoLancamento => widget.ponto != null;
 
@@ -53,6 +59,7 @@ class _LeituraFormViewState extends State<LeituraFormView> {
       pontoConsumoRepository: widget.pontoConsumoRepository,
       historicoLeituraRepository: widget.historicoLeituraRepository,
     );
+    _cameraService = CameraService();
     _instalacaoController = TextEditingController(
       text: ponto?.instalacao ?? '',
     );
@@ -71,7 +78,36 @@ class _LeituraFormViewState extends State<LeituraFormView> {
     _leituraController.dispose();
     _enderecoController.dispose();
     _fotoDescricaoController.dispose();
+    if (!_saved && _fotoPath != null) {
+      _cameraService.deletePhoto(_fotoPath!);
+    }
     super.dispose();
+  }
+
+  Future<void> _takePhoto() async {
+    try {
+      final path = await _cameraService.capturePhoto();
+      if (path != null) {
+        setState(() {
+          _fotoPath = path;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Erro ao capturar foto: $e';
+      });
+    }
+  }
+
+  Future<void> _deletePhoto() async {
+    if (_fotoPath != null) {
+      try {
+        await _cameraService.deletePhoto(_fotoPath!);
+      } catch (_) {}
+      setState(() {
+        _fotoPath = null;
+      });
+    }
   }
 
   Future<void> _save() async {
@@ -99,6 +135,7 @@ class _LeituraFormViewState extends State<LeituraFormView> {
         await _viewModel.addHistorico(
           pontoConsumoId: widget.ponto!.id,
           leitura: _leituraController.text,
+          fotoPath: _fotoPath,
           fotoDescricao: _fotoDescricaoController.text,
         );
       } else {
@@ -108,9 +145,11 @@ class _LeituraFormViewState extends State<LeituraFormView> {
           numeroMedidor: _numeroMedidorController.text,
           leitura: _leituraController.text,
           endereco: _enderecoController.text,
+          fotoPath: _fotoPath,
           fotoDescricao: _fotoDescricaoController.text,
         );
       }
+      _saved = true;
       if (mounted) {
         Navigator.of(context).pop(true);
       }
@@ -192,6 +231,46 @@ class _LeituraFormViewState extends State<LeituraFormView> {
                 ],
                 validator: (value) => LeituraValidators.leitura(value ?? ''),
               ),
+              const SizedBox(height: 16),
+              if (_fotoPath == null)
+                OutlinedButton.icon(
+                  onPressed: _takePhoto,
+                  icon: const Icon(Icons.camera_alt_outlined),
+                  label: const Text('Tirar Foto do Relogio'),
+                )
+              else
+                Container(
+                  height: 100,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppColors.primaryText, width: 1.5),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: const BorderRadius.horizontal(left: Radius.circular(6)),
+                        child: Image.file(
+                          File(_fotoPath!),
+                          width: 100,
+                          height: 100,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'Foto capturada',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Excluir foto',
+                        onPressed: _deletePhoto,
+                        icon: const Icon(Icons.delete_outline, color: AppColors.error),
+                      ),
+                    ],
+                  ),
+                ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _fotoDescricaoController,

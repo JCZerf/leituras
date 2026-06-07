@@ -9,6 +9,7 @@ import '../viewmodels/app_state.dart';
 import 'leitura_app_bar.dart';
 import 'leitura_detail_view.dart';
 import 'leitura_form_view.dart';
+import 'ponto_edit_form_view.dart';
 
 class LeiturasView extends StatefulWidget {
   const LeiturasView({
@@ -139,6 +140,105 @@ class _LeiturasViewState extends State<LeiturasView> {
     }
   }
 
+  Future<void> _editMeter(PontoConsumo ponto) async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => PontoEditFormView(
+          ponto: ponto,
+          pontoConsumoRepository: widget.pontoConsumoRepository,
+        ),
+      ),
+    );
+    if (saved == true) {
+      await _loadSelectedGroup();
+    }
+  }
+
+  Future<void> _deleteMeter(PontoConsumo ponto) async {
+    final label = ponto.instalacao ?? ponto.numeroMedidor ?? 'medidor';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Excluir medidor'),
+        content: Text(
+          'Deseja excluir "$label" e todo o seu historico de leituras?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    await widget.pontoConsumoRepository.delete(ponto.id!);
+    await _loadSelectedGroup();
+  }
+
+  void _showMeterActions(PontoConsumo ponto) {
+    final label = ponto.instalacao ?? ponto.numeroMedidor ?? 'Medidor';
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primaryText,
+                ),
+              ),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: const Text(
+                'Editar cadastro',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _editMeter(ponto);
+              },
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.delete_outline,
+                color: AppColors.error,
+              ),
+              title: const Text(
+                'Excluir medidor',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.error,
+                ),
+              ),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _deleteMeter(ponto);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final grupo = widget.appState.selectedGroup;
@@ -163,11 +263,13 @@ class _LeiturasViewState extends State<LeiturasView> {
       ),
       floatingActionButton: grupo == null
           ? null
-          : FloatingActionButton(
+          : FloatingActionButton.extended(
+              heroTag: 'fab_leituras',
               onPressed: _createMeter,
               backgroundColor: AppColors.primaryAction,
               foregroundColor: AppColors.background,
-              child: const Icon(Icons.add),
+              icon: const Icon(Icons.add),
+              label: const Text('Leitura'),
             ),
       body: SafeArea(
         child: grupo == null
@@ -245,6 +347,7 @@ class _LeiturasViewState extends State<LeiturasView> {
                               return _MeterTile(
                                 resumo: resumo,
                                 onTap: () => _openDetail(resumo.ponto),
+                                onLongPress: () => _showMeterActions(resumo.ponto),
                               );
                             },
                           ),
@@ -257,10 +360,15 @@ class _LeiturasViewState extends State<LeiturasView> {
 }
 
 class _MeterTile extends StatelessWidget {
-  const _MeterTile({required this.resumo, required this.onTap});
+  const _MeterTile({
+    required this.resumo,
+    required this.onTap,
+    required this.onLongPress,
+  });
 
   final PontoConsumoResumo resumo;
   final VoidCallback onTap;
+  final VoidCallback onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -286,6 +394,7 @@ class _MeterTile extends StatelessWidget {
       ),
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(8),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),

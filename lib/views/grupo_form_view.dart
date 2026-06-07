@@ -6,10 +6,21 @@ import '../theme/app_colors.dart';
 import '../viewmodels/leitura_validators.dart';
 import 'leitura_app_bar.dart';
 
+/// Form for creating or editing a [Grupo].
+///
+/// When [grupo] is null the form creates a new group.
+/// When [grupo] is provided the form edits the existing group.
 class GrupoFormView extends StatefulWidget {
-  const GrupoFormView({super.key, required this.grupoRepository});
+  const GrupoFormView({
+    super.key,
+    required this.grupoRepository,
+    this.grupo,
+  });
 
   final GrupoRepository grupoRepository;
+
+  /// If non-null the form opens in edit mode.
+  final Grupo? grupo;
 
   @override
   State<GrupoFormView> createState() => _GrupoFormViewState();
@@ -17,10 +28,23 @@ class GrupoFormView extends StatefulWidget {
 
 class _GrupoFormViewState extends State<GrupoFormView> {
   final _formKey = GlobalKey<FormState>();
-  final _nomeController = TextEditingController();
-  final _descricaoController = TextEditingController();
+  late final TextEditingController _nomeController;
+  late final TextEditingController _descricaoController;
   bool _isSaving = false;
   String? _errorMessage;
+
+  bool get _isEditing => widget.grupo != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _nomeController = TextEditingController(
+      text: widget.grupo?.nome ?? '',
+    );
+    _descricaoController = TextEditingController(
+      text: widget.grupo?.descricao ?? '',
+    );
+  }
 
   @override
   void dispose() {
@@ -40,19 +64,29 @@ class _GrupoFormViewState extends State<GrupoFormView> {
     });
 
     try {
-      await widget.grupoRepository.insert(
-        Grupo(
+      if (_isEditing) {
+        final updated = widget.grupo!.copyWith(
           nome: _nomeController.text.trim(),
           descricao: _optional(_descricaoController.text),
-          dataCriacao: DateTime.now(),
-        ),
-      );
+        );
+        await widget.grupoRepository.update(updated);
+      } else {
+        await widget.grupoRepository.insert(
+          Grupo(
+            nome: _nomeController.text.trim(),
+            descricao: _optional(_descricaoController.text),
+            dataCriacao: DateTime.now(),
+          ),
+        );
+      }
       if (mounted) {
         Navigator.of(context).pop(true);
       }
     } catch (error) {
       setState(() {
-        _errorMessage = 'Nao foi possivel criar o grupo.';
+        _errorMessage = _isEditing
+            ? 'Nao foi possivel salvar as alteracoes.'
+            : 'Nao foi possivel criar o grupo.';
       });
     } finally {
       if (mounted) {
@@ -71,7 +105,9 @@ class _GrupoFormViewState extends State<GrupoFormView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const LeituraAppBar(title: 'Novo grupo'),
+      appBar: LeituraAppBar(
+        title: _isEditing ? 'Editar grupo' : 'Novo grupo',
+      ),
       body: SafeArea(
         child: Form(
           key: _formKey,
@@ -116,7 +152,7 @@ class _GrupoFormViewState extends State<GrupoFormView> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.save_outlined),
-                label: const Text('Salvar grupo'),
+                label: Text(_isEditing ? 'Salvar alteracoes' : 'Salvar grupo'),
               ),
             ],
           ),

@@ -13,6 +13,22 @@ class PontoConsumo {
   final String? numeroMedidor;
   final String? endereco;
 
+  PontoConsumo copyWith({
+    int? id,
+    int? grupoId,
+    String? instalacao,
+    String? numeroMedidor,
+    String? endereco,
+  }) {
+    return PontoConsumo(
+      id: id ?? this.id,
+      grupoId: grupoId ?? this.grupoId,
+      instalacao: instalacao ?? this.instalacao,
+      numeroMedidor: numeroMedidor ?? this.numeroMedidor,
+      endereco: endereco ?? this.endereco,
+    );
+  }
+
   Map<String, Object?> toMap() {
     return {
       'id': id,

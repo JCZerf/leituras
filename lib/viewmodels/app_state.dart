@@ -21,4 +21,9 @@ class AppState extends ChangeNotifier {
     currentTabIndex = 1;
     notifyListeners();
   }
+
+  void clearSelectedGroup() {
+    selectedGroup = null;
+    notifyListeners();
+  }
 }

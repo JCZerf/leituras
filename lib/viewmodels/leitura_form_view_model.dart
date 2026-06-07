@@ -24,6 +24,7 @@ class LeituraFormViewModel {
     required String numeroMedidor,
     required String leitura,
     String? endereco,
+    String? fotoPath,
     String? fotoDescricao,
   }) async {
     final errors = [
@@ -56,6 +57,7 @@ class LeituraFormViewModel {
     await addHistorico(
       pontoConsumoId: pontoId,
       leitura: leitura,
+      fotoPath: fotoPath,
       fotoDescricao: fotoDescricao,
     );
   }
@@ -63,6 +65,7 @@ class LeituraFormViewModel {
   Future<void> addHistorico({
     required int? pontoConsumoId,
     required String leitura,
+    String? fotoPath,
     String? fotoDescricao,
   }) async {
     final errors = [
@@ -84,6 +87,7 @@ class LeituraFormViewModel {
         pontoConsumoId: pontoConsumoId,
         valorLeitura: int.parse(leitura.trim()),
         dataLeitura: DateTime.now(),
+        fotoPath: fotoPath,
         fotoDescricao: _optional(fotoDescricao),
       ),
     );

@@ -58,6 +58,7 @@ class _MainNavigationState extends State<MainNavigation> {
             GruposView(
               appState: _appState,
               grupoRepository: widget.grupoRepository,
+              pontoConsumoRepository: widget.pontoConsumoRepository,
             ),
             LeiturasView(
               appState: _appState,

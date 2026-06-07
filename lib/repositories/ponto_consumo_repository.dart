@@ -57,4 +57,28 @@ class PontoConsumoRepository {
     final db = await _database.database;
     return db.insert('pontos_consumo', ponto.toMap()..remove('id'));
   }
+
+  Future<int> update(PontoConsumo ponto) async {
+    final db = await _database.database;
+    return db.update(
+      'pontos_consumo',
+      ponto.toMap()..remove('id'),
+      where: 'id = ?',
+      whereArgs: [ponto.id],
+    );
+  }
+
+  Future<void> delete(int id) async {
+    final db = await _database.database;
+    await db.delete('pontos_consumo', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<bool> existsByGrupoId(int grupoId) async {
+    final db = await _database.database;
+    final result = await db.rawQuery(
+      'SELECT EXISTS(SELECT 1 FROM pontos_consumo WHERE grupo_id = ?) AS result',
+      [grupoId],
+    );
+    return result.first['result'] == 1;
+  }
 }

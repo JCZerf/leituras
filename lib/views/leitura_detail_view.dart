@@ -1,6 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../models/grupo.dart';
+import 'foto_viewer_view.dart';
 import '../models/historico_leitura.dart';
 import '../models/ponto_consumo.dart';
 import '../repositories/grupo_repository.dart';
@@ -107,7 +111,7 @@ class _LeituraDetailViewState extends State<LeituraDetailView> {
                 else if (historico.isEmpty)
                   const _EmptyTimeline()
                 else
-                  ...historico.map(_TimelineItem.new),
+                  ...historico.map((h) => _TimelineItem(h, ponto: widget.ponto)),
               ],
             );
           },
@@ -158,9 +162,35 @@ class _PontoHeader extends StatelessWidget {
 }
 
 class _TimelineItem extends StatelessWidget {
-  const _TimelineItem(this.historico);
+  const _TimelineItem(this.historico, {required this.ponto});
 
   final HistoricoLeitura historico;
+  final PontoConsumo ponto;
+
+  Future<void> _share(BuildContext context) async {
+    final dateStr = _formatDate(historico.dataLeitura);
+    final text = 'Leitura: ${historico.valorLeitura}\n'
+        'Data: $dateStr\n'
+        'Instalacao: ${ponto.instalacao ?? "-"}\n'
+        'Medidor: ${ponto.numeroMedidor ?? "-"}';
+
+    try {
+      if (historico.fotoPath != null) {
+        await Share.shareXFiles(
+          [XFile(historico.fotoPath!)],
+          text: text,
+        );
+      } else {
+        await Share.share(text);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao compartilhar: $e')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -171,53 +201,110 @@ class _TimelineItem extends StatelessWidget {
         border: Border.all(color: AppColors.primaryText, width: 1.5),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.timeline_outlined),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  historico.valorLeitura.toString(),
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.primaryText,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  _formatDate(historico.dataLeitura),
-                  style: const TextStyle(
-                    color: AppColors.secondaryText,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                if (historico.fotoDescricao != null) ...[
-                  const SizedBox(height: 10),
-                  Text(
-                    historico.fotoDescricao!,
-                    style: const TextStyle(
-                      color: AppColors.primaryText,
-                      fontSize: 16,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.timeline_outlined),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            historico.valorLeitura.toString(),
+                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primaryText,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            _formatDate(historico.dataLeitura),
+                            style: const TextStyle(
+                              color: AppColors.secondaryText,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          if (historico.fotoDescricao != null && historico.fotoDescricao!.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            Text(
+                              historico.fotoDescricao!,
+                              style: const TextStyle(
+                                color: AppColors.primaryText,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-                if (historico.fotoPath != null) ...[
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Foto registrada',
-                    style: TextStyle(
-                      color: AppColors.secondaryText,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ],
-            ),
+                    if (historico.fotoPath != null) ...[
+                      const SizedBox(width: 12),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => FotoViewerView(
+                                fotoPath: historico.fotoPath!,
+                                descricao: historico.fotoDescricao,
+                                shareText: 'Leitura: ${historico.valorLeitura}\n'
+                                    'Data: ${_formatDate(historico.dataLeitura)}\n'
+                                    'Instalacao: ${ponto.instalacao ?? "-"}',
+                              ),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: AppColors.primaryText, width: 1.5),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(6.5),
+                            child: Image.file(
+                              File(historico.fotoPath!),
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const Icon(
+                                Icons.broken_image_outlined,
+                                color: AppColors.error,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 24, thickness: 1.5, color: AppColors.primaryText),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton.icon(
+                onPressed: () => _share(context),
+                icon: const Icon(Icons.share_outlined, size: 18),
+                label: const Text(
+                  'Compartilhar',
+                  style: TextStyle(fontWeight: FontWeight.w800),
+                ),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  foregroundColor: AppColors.primaryText,
+                ),
+              ),
+            ],
           ),
         ],
       ),
