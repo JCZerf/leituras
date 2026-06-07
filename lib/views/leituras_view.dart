@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-
-import '../models/historico_leitura.dart';
 import '../models/ponto_consumo.dart';
 import '../models/ponto_consumo_resumo.dart';
 import '../repositories/grupo_repository.dart';
@@ -8,6 +6,7 @@ import '../repositories/historico_leitura_repository.dart';
 import '../repositories/ponto_consumo_repository.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/app_state.dart';
+import 'leitura_app_bar.dart';
 import 'leitura_detail_view.dart';
 import 'leitura_form_view.dart';
 
@@ -30,9 +29,24 @@ class LeiturasView extends StatefulWidget {
 }
 
 class _LeiturasViewState extends State<LeiturasView> {
+  final _searchController = TextEditingController();
   List<PontoConsumoResumo> _pontos = const [];
   bool _isLoading = false;
   int? _loadedGroupId;
+  String _query = '';
+
+  List<PontoConsumoResumo> get _filteredPontos {
+    final query = _query.trim().toLowerCase();
+    if (query.isEmpty) {
+      return _pontos;
+    }
+    return _pontos.where((resumo) {
+      final p = resumo.ponto;
+      return (p.instalacao?.toLowerCase().contains(query) ?? false) ||
+          (p.numeroMedidor?.toLowerCase().contains(query) ?? false) ||
+          (p.endereco?.toLowerCase().contains(query) ?? false);
+    }).toList();
+  }
 
   @override
   void initState() {
@@ -44,6 +58,7 @@ class _LeiturasViewState extends State<LeiturasView> {
   @override
   void dispose() {
     widget.appState.removeListener(_handleAppStateChanged);
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -127,9 +142,25 @@ class _LeiturasViewState extends State<LeiturasView> {
   @override
   Widget build(BuildContext context) {
     final grupo = widget.appState.selectedGroup;
+    final pontos = _filteredPontos;
+
+    final appBarTitle = grupo == null
+        ? 'Leituras'
+        : 'Leituras: ${grupo.nome}';
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Leituras')),
+      appBar: LeituraAppBar(
+        title: appBarTitle,
+        actions: grupo == null
+            ? null
+            : [
+                IconButton(
+                  tooltip: 'Novo medidor',
+                  onPressed: _createMeter,
+                  icon: const Icon(Icons.add),
+                ),
+              ],
+      ),
       floatingActionButton: grupo == null
           ? null
           : FloatingActionButton(
@@ -143,57 +174,83 @@ class _LeiturasViewState extends State<LeiturasView> {
             ? const _NoGroupSelected()
             : _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : ListView(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+            : Column(
                 children: [
-                  _SelectedGroupHeader(groupName: grupo.nome),
-                  const SizedBox(height: 10),
-                  if (_pontos.isEmpty)
-                    const _EmptyMeters()
-                  else
-                    ..._pontos.map(
-                      (resumo) => _MeterTile(
-                        resumo: resumo,
-                        onTap: () => _openDetail(resumo.ponto),
+                  // Fixed search bar at the top
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (value) {
+                        setState(() {
+                          _query = value;
+                        });
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Buscar medidor',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: _query.isEmpty
+                            ? null
+                            : IconButton(
+                                tooltip: 'Limpar busca',
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() {
+                                    _query = '';
+                                  });
+                                },
+                                icon: const Icon(Icons.close),
+                              ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 10,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(
+                            color: AppColors.primaryText,
+                            width: 1.5,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(
+                            color: AppColors.primaryText,
+                            width: 1.5,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(
+                            color: AppColors.primaryAction,
+                            width: 2,
+                          ),
+                        ),
                       ),
                     ),
+                  ),
+                  // Scrollable meter list
+                  Expanded(
+                    child: pontos.isEmpty
+                        ? Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: _query.trim().isNotEmpty
+                                ? const _EmptySearch()
+                                : const _EmptyMeters(),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+                            itemCount: pontos.length,
+                            itemBuilder: (context, index) {
+                              final resumo = pontos[index];
+                              return _MeterTile(
+                                resumo: resumo,
+                                onTap: () => _openDetail(resumo.ponto),
+                              );
+                            },
+                          ),
+                  ),
                 ],
               ),
-      ),
-    );
-  }
-}
-
-class _SelectedGroupHeader extends StatelessWidget {
-  const _SelectedGroupHeader({required this.groupName});
-
-  final String groupName;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        border: Border.all(color: AppColors.primaryText, width: 1.5),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.folder_outlined),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              groupName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: AppColors.primaryText,
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -209,77 +266,64 @@ class _MeterTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final ponto = resumo.ponto;
     final leitura = resumo.ultimaLeitura;
-    final primaryLabel = ponto.instalacao != null
-        ? 'Instalacao: ${ponto.instalacao}'
-        : 'Medidor: ${ponto.numeroMedidor ?? '-'}';
+
+    // Show instalação as primary label when available, otherwise medidor.
+    final primaryLabel = ponto.instalacao != null && ponto.instalacao!.isNotEmpty
+        ? ponto.instalacao!
+        : ponto.numeroMedidor ?? '-';
+
+    final readingText = leitura == null
+        ? 'Sem leitura'
+        : 'Leitura: ${leitura.valorLeitura}';
 
     return Card(
       color: AppColors.background,
       elevation: 0,
-      margin: const EdgeInsets.only(bottom: 6),
+      margin: const EdgeInsets.only(bottom: 4),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
         side: const BorderSide(color: AppColors.primaryText, width: 1.5),
       ),
-      child: ListTile(
+      child: InkWell(
         onTap: onTap,
-        dense: true,
-        visualDensity: VisualDensity.compact,
-        minVerticalPadding: 4,
-        contentPadding: const EdgeInsets.only(left: 10, right: 4),
-        title: Text(
-          primaryLabel,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: AppColors.primaryText,
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        subtitle: ponto.instalacao != null && ponto.numeroMedidor != null
-            ? Text(
-                'Medidor: ${ponto.numeroMedidor}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppColors.secondaryText,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  primaryLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.primaryText,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              )
-            : null,
-        trailing: _ReadingTrailing(leitura: leitura),
-      ),
-    );
-  }
-}
-
-class _ReadingTrailing extends StatelessWidget {
-  const _ReadingTrailing({required this.leitura});
-
-  final HistoricoLeitura? leitura;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          leitura == null ? 'Sem leitura' : 'Leitura: ${leitura!.valorLeitura}',
-          style: const TextStyle(
-            color: AppColors.primaryText,
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                readingText,
+                style: TextStyle(
+                  color: leitura == null
+                      ? AppColors.secondaryText
+                      : AppColors.primaryText,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(width: 2),
+              const Icon(
+                Icons.chevron_right,
+                color: AppColors.secondaryText,
+                size: 20,
+              ),
+            ],
           ),
         ),
-        const SizedBox(width: 2),
-        const Icon(
-          Icons.chevron_right,
-          color: AppColors.secondaryText,
-          size: 22,
-        ),
-      ],
+      ),
     );
   }
 }
@@ -315,6 +359,26 @@ class _EmptyMeters extends StatelessWidget {
       ),
       child: const Text(
         'Nenhum medidor neste grupo.',
+        textAlign: TextAlign.center,
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+}
+
+class _EmptySearch extends StatelessWidget {
+  const _EmptySearch();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.primaryText, width: 1.5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Text(
+        'Nenhum medidor encontrado.',
         textAlign: TextAlign.center,
         style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
       ),

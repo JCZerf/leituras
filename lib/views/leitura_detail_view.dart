@@ -7,6 +7,7 @@ import '../repositories/grupo_repository.dart';
 import '../repositories/historico_leitura_repository.dart';
 import '../repositories/ponto_consumo_repository.dart';
 import '../theme/app_colors.dart';
+import 'leitura_app_bar.dart';
 import 'leitura_form_view.dart';
 
 class LeituraDetailView extends StatefulWidget {
@@ -66,8 +67,8 @@ class _LeituraDetailViewState extends State<LeituraDetailView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Historico'),
+      appBar: LeituraAppBar(
+        title: 'Historico',
         actions: [
           IconButton(
             tooltip: 'Nova leitura',

@@ -9,6 +9,7 @@ import '../repositories/ponto_consumo_repository.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/leitura_form_view_model.dart';
 import '../viewmodels/leitura_validators.dart';
+import 'leitura_app_bar.dart';
 
 class LeituraFormView extends StatefulWidget {
   const LeituraFormView({
@@ -131,8 +132,8 @@ class _LeituraFormViewState extends State<LeituraFormView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_isNovoLancamento ? 'Nova leitura' : 'Cadastrar medidor'),
+      appBar: LeituraAppBar(
+        title: _isNovoLancamento ? 'Nova leitura' : 'Cadastrar medidor',
       ),
       body: SafeArea(
         child: Form(

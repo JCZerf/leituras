@@ -4,6 +4,7 @@ import '../models/grupo.dart';
 import '../repositories/grupo_repository.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/leitura_validators.dart';
+import 'leitura_app_bar.dart';
 
 class GrupoFormView extends StatefulWidget {
   const GrupoFormView({super.key, required this.grupoRepository});
@@ -70,7 +71,7 @@ class _GrupoFormViewState extends State<GrupoFormView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Novo grupo')),
+      appBar: const LeituraAppBar(title: 'Novo grupo'),
       body: SafeArea(
         child: Form(
           key: _formKey,

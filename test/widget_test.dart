@@ -71,7 +71,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Leitura: 12345'), findsOneWidget);
-    expect(find.text('Instalacao: A1'), findsOneWidget);
+    expect(find.text('A1'), findsOneWidget);
   });
 }
 

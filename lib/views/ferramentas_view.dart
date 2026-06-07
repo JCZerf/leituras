@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import 'leitura_app_bar.dart';
 
 class FerramentasView extends StatelessWidget {
   const FerramentasView({super.key});
@@ -8,7 +9,7 @@ class FerramentasView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Ferramentas')),
+      appBar: const LeituraAppBar(title: 'Ferramentas'),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),

@@ -51,21 +51,23 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _appState.currentTabIndex,
-        children: [
-          GruposView(
-            appState: _appState,
-            grupoRepository: widget.grupoRepository,
-          ),
-          LeiturasView(
-            appState: _appState,
-            grupoRepository: widget.grupoRepository,
-            pontoConsumoRepository: widget.pontoConsumoRepository,
-            historicoLeituraRepository: widget.historicoLeituraRepository,
-          ),
-          const FerramentasView(),
-        ],
+      body: HeroControllerScope.none(
+        child: IndexedStack(
+          index: _appState.currentTabIndex,
+          children: [
+            GruposView(
+              appState: _appState,
+              grupoRepository: widget.grupoRepository,
+            ),
+            LeiturasView(
+              appState: _appState,
+              grupoRepository: widget.grupoRepository,
+              pontoConsumoRepository: widget.pontoConsumoRepository,
+              historicoLeituraRepository: widget.historicoLeituraRepository,
+            ),
+            const FerramentasView(),
+          ],
+        ),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _appState.currentTabIndex,

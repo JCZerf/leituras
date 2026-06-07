@@ -5,6 +5,7 @@ import '../repositories/grupo_repository.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/app_state.dart';
 import 'grupo_form_view.dart';
+import 'leitura_app_bar.dart';
 
 class GruposView extends StatefulWidget {
   const GruposView({
@@ -79,8 +80,8 @@ class _GruposViewState extends State<GruposView> {
     final grupos = _filteredGroups;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Grupos'),
+      appBar: LeituraAppBar(
+        title: 'Grupos',
         actions: [
           IconButton(
             tooltip: 'Criar grupo',
