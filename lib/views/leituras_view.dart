@@ -6,6 +6,7 @@ import '../repositories/historico_leitura_repository.dart';
 import '../repositories/ponto_consumo_repository.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/app_state.dart';
+import '../widgets/app_action_sheet.dart';
 import 'leitura_app_bar.dart';
 import 'leitura_detail_view.dart';
 import 'leitura_form_view.dart';
@@ -31,6 +32,7 @@ class LeiturasView extends StatefulWidget {
 
 class _LeiturasViewState extends State<LeiturasView> {
   final _searchController = TextEditingController();
+  final _searchFocusNode = FocusNode();
   List<PontoConsumoResumo> _pontos = const [];
   bool _isLoading = false;
   int? _loadedGroupId;
@@ -74,7 +76,40 @@ class _LeiturasViewState extends State<LeiturasView> {
   void dispose() {
     widget.appState.removeListener(_handleAppStateChanged);
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
+  }
+
+  Iterable<String> _autocompleteOptions(TextEditingValue value) {
+    final query = value.text.trim().toLowerCase();
+    if (query.length <= 4) {
+      return const <String>[];
+    }
+
+    final suggestions = <String>{};
+    for (final resumo in _pontos) {
+      final ponto = resumo.ponto;
+      for (final candidate in [ponto.instalacao, ponto.numeroMedidor]) {
+        final text = candidate?.trim();
+        if (text == null || text.isEmpty) {
+          continue;
+        }
+        if (text.toLowerCase().startsWith(query)) {
+          suggestions.add(text);
+        }
+      }
+      if (suggestions.length >= 6) {
+        break;
+      }
+    }
+
+    return suggestions;
+  }
+
+  void _setSearchQuery(String value) {
+    setState(() {
+      _query = value;
+    });
   }
 
   void _handleAppStateChanged() {
@@ -201,51 +236,33 @@ class _LeiturasViewState extends State<LeiturasView> {
     final label = ponto.instalacao ?? ponto.numeroMedidor ?? 'Medidor';
     showModalBottomSheet<void>(
       context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.primaryText,
-                ),
-              ),
-            ),
-            const Divider(height: 1),
-            ListTile(
-              leading: const Icon(Icons.edit_outlined),
-              title: const Text(
-                'Editar cadastro',
-                style: TextStyle(fontWeight: FontWeight.w700),
-              ),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                _editMeter(ponto);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline, color: AppColors.error),
-              title: const Text(
-                'Excluir medidor',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.error,
-                ),
-              ),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                _deleteMeter(ponto);
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black54,
+      builder: (ctx) => AppActionSheet(
+        title: label,
+        icon: Icons.speed_outlined,
+        subtitle: 'Acoes do medidor',
+        actions: [
+          AppActionSheetAction(
+            label: 'Editar cadastro',
+            subtitle: 'Alterar instalacao, medidor, endereco e tipo.',
+            icon: Icons.edit_outlined,
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _editMeter(ponto);
+            },
+          ),
+          AppActionSheetAction(
+            label: 'Excluir medidor',
+            subtitle: 'Remove o cadastro e todo o historico de leituras.',
+            icon: Icons.delete_outline,
+            isDestructive: true,
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _deleteMeter(ponto);
+            },
+          ),
+        ],
       ),
     );
   }
@@ -326,53 +343,102 @@ class _LeiturasViewState extends State<LeiturasView> {
                   // Fixed search bar at the top
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                    child: TextField(
-                      controller: _searchController,
-                      onChanged: (value) {
-                        setState(() {
-                          _query = value;
-                        });
+                    child: RawAutocomplete<String>(
+                      textEditingController: _searchController,
+                      focusNode: _searchFocusNode,
+                      optionsBuilder: _autocompleteOptions,
+                      onSelected: (value) {
+                        _searchController.value = TextEditingValue(
+                          text: value,
+                          selection: TextSelection.collapsed(
+                            offset: value.length,
+                          ),
+                        );
+                        _setSearchQuery(value);
                       },
-                      decoration: InputDecoration(
-                        hintText: 'Buscar medidor',
-                        prefixIcon: const Icon(Icons.search),
-                        suffixIcon: _query.isEmpty
-                            ? null
-                            : IconButton(
-                                tooltip: 'Limpar busca',
-                                onPressed: () {
-                                  _searchController.clear();
-                                  setState(() {
-                                    _query = '';
-                                  });
-                                },
-                                icon: const Icon(Icons.close),
+                      fieldViewBuilder:
+                          (context, controller, focusNode, onFieldSubmitted) {
+                            return TextField(
+                              controller: controller,
+                              focusNode: focusNode,
+                              onChanged: _setSearchQuery,
+                              decoration: InputDecoration(
+                                hintText: 'Buscar medidor ou instalação',
+                                prefixIcon: const Icon(Icons.search),
+                                suffixIcon: _query.isEmpty
+                                    ? null
+                                    : IconButton(
+                                        tooltip: 'Limpar busca',
+                                        onPressed: () {
+                                          controller.clear();
+                                          _setSearchQuery('');
+                                        },
+                                        icon: const Icon(Icons.close),
+                                      ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: const BorderSide(
+                                    color: AppColors.primaryText,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: const BorderSide(
+                                    color: AppColors.primaryText,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: const BorderSide(
+                                    color: AppColors.primaryAction,
+                                    width: 2,
+                                  ),
+                                ),
                               ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 10,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(
-                            color: AppColors.primaryText,
-                            width: 1.5,
+                            );
+                          },
+                      optionsViewBuilder: (context, onSelected, options) {
+                        return Align(
+                          alignment: Alignment.topLeft,
+                          child: Material(
+                            elevation: 4,
+                            color: AppColors.background,
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                maxHeight: 240,
+                                maxWidth: 420,
+                              ),
+                              child: ListView.builder(
+                                padding: EdgeInsets.zero,
+                                shrinkWrap: true,
+                                itemCount: options.length,
+                                itemBuilder: (context, index) {
+                                  final option = options.elementAt(index);
+                                  return ListTile(
+                                    dense: true,
+                                    leading: const Icon(Icons.north_west),
+                                    title: Text(
+                                      option,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: AppColors.primaryText,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    onTap: () => onSelected(option),
+                                  );
+                                },
+                              ),
+                            ),
                           ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(
-                            color: AppColors.primaryText,
-                            width: 1.5,
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(
-                            color: AppColors.primaryAction,
-                            width: 2,
-                          ),
-                        ),
-                      ),
+                        );
+                      },
                     ),
                   ),
                   // Scrollable meter list

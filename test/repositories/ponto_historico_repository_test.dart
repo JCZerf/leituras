@@ -132,6 +132,76 @@ void main() {
     },
     skip: sqliteAvailable ? false : 'libsqlite3.so is not available.',
   );
+
+  test(
+    'updates a reading without creating a new history entry',
+    () async {
+      final grupoId = await grupoRepository.insert(
+        Grupo(nome: 'Bloco A', dataCriacao: DateTime(2026)),
+      );
+      final pontoId = await pontoRepository.insert(
+        PontoConsumo(grupoId: grupoId, instalacao: 'A1'),
+      );
+      final leituraId = await historicoRepository.insert(
+        HistoricoLeitura(
+          pontoConsumoId: pontoId,
+          valorLeitura: 1234,
+          dataLeitura: DateTime(2026, 1, 1, 10),
+        ),
+      );
+
+      await historicoRepository.update(
+        HistoricoLeitura(
+          id: leituraId,
+          pontoConsumoId: pontoId,
+          valorLeitura: 1284,
+          dataLeitura: DateTime(2026, 1, 1, 10),
+        ),
+      );
+
+      final historico = await historicoRepository.findByPontoConsumoId(pontoId);
+
+      expect(historico, hasLength(1));
+      expect(historico.single.id, leituraId);
+      expect(historico.single.valorLeitura, 1284);
+    },
+    skip: sqliteAvailable ? false : 'libsqlite3.so is not available.',
+  );
+
+  test(
+    'deletes latest reading and summary falls back to previous reading',
+    () async {
+      final grupoId = await grupoRepository.insert(
+        Grupo(nome: 'Bloco A', dataCriacao: DateTime(2026)),
+      );
+      final pontoId = await pontoRepository.insert(
+        PontoConsumo(grupoId: grupoId, instalacao: 'A1'),
+      );
+      await historicoRepository.insert(
+        HistoricoLeitura(
+          pontoConsumoId: pontoId,
+          valorLeitura: 1234,
+          dataLeitura: DateTime(2026, 1, 1, 10),
+        ),
+      );
+      final latestId = await historicoRepository.insert(
+        HistoricoLeitura(
+          pontoConsumoId: pontoId,
+          valorLeitura: 2345,
+          dataLeitura: DateTime(2026, 1, 2, 10),
+        ),
+      );
+
+      await historicoRepository.delete(latestId);
+
+      final pontos = await pontoRepository.findResumoByGrupoId(grupoId);
+      final historico = await historicoRepository.findByPontoConsumoId(pontoId);
+
+      expect(historico, hasLength(1));
+      expect(pontos.single.ultimaLeitura!.valorLeitura, 1234);
+    },
+    skip: sqliteAvailable ? false : 'libsqlite3.so is not available.',
+  );
 }
 
 bool _isSqliteAvailable() {

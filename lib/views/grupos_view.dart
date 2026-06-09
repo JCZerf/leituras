@@ -5,6 +5,7 @@ import '../repositories/grupo_repository.dart';
 import '../repositories/ponto_consumo_repository.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/app_state.dart';
+import '../widgets/app_action_sheet.dart';
 import 'grupo_form_view.dart';
 import 'leitura_app_bar.dart';
 
@@ -165,51 +166,33 @@ class _GruposViewState extends State<GruposView> {
   void _showActions(Grupo grupo) {
     showModalBottomSheet<void>(
       context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                grupo.nome,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.primaryText,
-                ),
-              ),
-            ),
-            const Divider(height: 1),
-            ListTile(
-              leading: const Icon(Icons.edit_outlined),
-              title: const Text(
-                'Editar cadastro',
-                style: TextStyle(fontWeight: FontWeight.w700),
-              ),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                _editGroup(grupo);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline, color: AppColors.error),
-              title: const Text(
-                'Excluir grupo',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.error,
-                ),
-              ),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                _deleteGroup(grupo);
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black54,
+      builder: (ctx) => AppActionSheet(
+        title: grupo.nome,
+        icon: Icons.folder_outlined,
+        subtitle: 'Acoes do grupo',
+        actions: [
+          AppActionSheetAction(
+            label: 'Editar cadastro',
+            subtitle: 'Alterar nome e descricao do grupo.',
+            icon: Icons.edit_outlined,
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _editGroup(grupo);
+            },
+          ),
+          AppActionSheetAction(
+            label: 'Excluir grupo',
+            subtitle: 'Remove o grupo quando nao houver medidores vinculados.',
+            icon: Icons.delete_outline,
+            isDestructive: true,
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _deleteGroup(grupo);
+            },
+          ),
+        ],
       ),
     );
   }
