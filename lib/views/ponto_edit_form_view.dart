@@ -31,6 +31,8 @@ class _PontoEditFormViewState extends State<PontoEditFormView> {
   bool _isSaving = false;
   String? _errorMessage;
   bool _isInterno = false;
+  bool _isComposto = false;
+  bool _isDesabitado = false;
 
   @override
   void initState() {
@@ -45,6 +47,8 @@ class _PontoEditFormViewState extends State<PontoEditFormView> {
       text: widget.ponto.endereco ?? '',
     );
     _isInterno = widget.ponto.isInterno;
+    _isComposto = widget.ponto.isComposto;
+    _isDesabitado = widget.ponto.isDesabitado;
   }
 
   @override
@@ -79,6 +83,8 @@ class _PontoEditFormViewState extends State<PontoEditFormView> {
         numeroMedidor: _optional(_numeroMedidorController.text),
         endereco: _optional(_enderecoController.text),
         isInterno: _isInterno,
+        isComposto: _isComposto,
+        isDesabitado: _isDesabitado,
       );
       await widget.pontoConsumoRepository.update(updated);
       if (mounted) {
@@ -139,7 +145,8 @@ class _PontoEditFormViewState extends State<PontoEditFormView> {
                 controller: _enderecoController,
                 decoration: const InputDecoration(
                   labelText: 'Endereco',
-                  helperText: 'Importante: Detalhe bem o local (ex: Apto 302, Fundo do galpao trancado)',
+                  helperText:
+                      'Importante: Detalhe bem o local (ex: Apto 302, Fundo do galpao trancado)',
                   helperMaxLines: 2,
                   prefixIcon: Icon(Icons.location_on_outlined),
                 ),
@@ -148,17 +155,62 @@ class _PontoEditFormViewState extends State<PontoEditFormView> {
               const SizedBox(height: 16),
               SwitchListTile(
                 title: const Text(
-                  'Este medidor e INTERNO?',
-                  style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.primaryText),
+                  'Medidor interno?',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primaryText,
+                  ),
                 ),
                 subtitle: const Text(
-                  'Exige agendamento / contato previo',
+                  'Exige coletar antes / contato previo',
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 value: _isInterno,
                 onChanged: (val) {
                   setState(() {
                     _isInterno = val;
+                  });
+                },
+                activeColor: AppColors.primaryAction,
+                contentPadding: EdgeInsets.zero,
+              ),
+              SwitchListTile(
+                title: const Text(
+                  'Lugar desabitado?',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primaryText,
+                  ),
+                ),
+                subtitle: const Text(
+                  'Não aparecerá como pendente se for interno',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                value: _isDesabitado,
+                onChanged: (val) {
+                  setState(() {
+                    _isDesabitado = val;
+                  });
+                },
+                activeColor: AppColors.primaryAction,
+                contentPadding: EdgeInsets.zero,
+              ),
+              SwitchListTile(
+                title: const Text(
+                  'Medidor GD 03/103?',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primaryText,
+                  ),
+                ),
+                subtitle: const Text(
+                  'Permite registrar consumo 03 e producao 103',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                value: _isComposto,
+                onChanged: (val) {
+                  setState(() {
+                    _isComposto = val;
                   });
                 },
                 activeColor: AppColors.primaryAction,

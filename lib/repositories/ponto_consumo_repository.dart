@@ -19,8 +19,11 @@ class PontoConsumoRepository {
         pc.numero_medidor,
         pc.endereco,
         pc.is_interno,
+        pc.is_composto,
+        pc.is_desabitado,
         hl.id AS ultima_leitura_id,
         hl.valor_leitura AS ultima_valor_leitura,
+        hl.valor_producao AS ultima_valor_producao,
         hl.data_leitura AS ultima_data_leitura,
         hl.foto_path AS ultima_foto_path,
         hl.foto_descricao AS ultima_foto_descricao
@@ -86,8 +89,7 @@ class PontoConsumoRepository {
 
   Future<List<PontoInternoResumo>> findAllInternosResumo() async {
     final db = await _database.database;
-    final maps = await db.rawQuery(
-      '''
+    final maps = await db.rawQuery('''
       SELECT
         pc.id,
         pc.grupo_id,
@@ -96,8 +98,11 @@ class PontoConsumoRepository {
         pc.numero_medidor,
         pc.endereco,
         pc.is_interno,
+        pc.is_composto,
+        pc.is_desabitado,
         hl.id AS ultima_leitura_id,
         hl.valor_leitura AS ultima_valor_leitura,
+        hl.valor_producao AS ultima_valor_producao,
         hl.data_leitura AS ultima_data_leitura,
         hl.foto_path AS ultima_foto_path,
         hl.foto_descricao AS ultima_foto_descricao
@@ -113,8 +118,7 @@ class PontoConsumoRepository {
         )
       WHERE pc.is_interno = 1
       ORDER BY g.nome COLLATE NOCASE ASC, pc.id DESC
-      '''
-    );
+      ''');
     return maps.map(PontoInternoResumo.fromMap).toList();
   }
 }

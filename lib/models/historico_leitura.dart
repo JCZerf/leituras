@@ -3,6 +3,7 @@ class HistoricoLeitura {
     this.id,
     required this.pontoConsumoId,
     required this.valorLeitura,
+    this.valorProducao,
     required this.dataLeitura,
     this.fotoPath,
     this.fotoDescricao,
@@ -11,6 +12,7 @@ class HistoricoLeitura {
   final int? id;
   final int pontoConsumoId;
   final int valorLeitura;
+  final int? valorProducao;
   final DateTime dataLeitura;
   final String? fotoPath;
   final String? fotoDescricao;
@@ -20,6 +22,7 @@ class HistoricoLeitura {
       'id': id,
       'ponto_consumo_id': pontoConsumoId,
       'valor_leitura': valorLeitura,
+      'valor_producao': valorProducao,
       'data_leitura': _formatSqliteDateTime(dataLeitura),
       'foto_path': fotoPath,
       'foto_descricao': fotoDescricao,
@@ -31,6 +34,7 @@ class HistoricoLeitura {
       id: map['id'] as int?,
       pontoConsumoId: map['ponto_consumo_id'] as int,
       valorLeitura: map['valor_leitura'] as int,
+      valorProducao: map['valor_producao'] as int?,
       dataLeitura: _parseSqliteDateTime(map['data_leitura'] as String),
       fotoPath: map['foto_path'] as String?,
       fotoDescricao: map['foto_descricao'] as String?,

@@ -44,7 +44,7 @@ class _PreventivoInternosViewState extends State<PreventivoInternosView> {
   int? _selectedGroupId;
   int? _lastAppStateGroupId;
   List<Grupo> _grupos = const [];
-  
+
   Map<String, List<PontoInternoResumo>> _groupedItems = const {};
   List<PontoInternoResumo> _flatItems = const [];
   List<_RoteiroItemState> _roteiroStates = const [];
@@ -185,6 +185,7 @@ class _PreventivoInternosViewState extends State<PreventivoInternosView> {
   }
 
   bool _isItemColetado(PontoInternoResumo item) {
+    if (item.resumo.ponto.isDesabitado) return true;
     final leitura = item.resumo.ultimaLeitura;
     if (leitura == null) return false;
     final now = DateTime.now();
@@ -199,24 +200,12 @@ class _PreventivoInternosViewState extends State<PreventivoInternosView> {
         setState(() {
           state.fotoPath = path;
           state.isOcrProcessing = true;
-          state.ocrSuggestions = const [];
           state.errorMessage = null;
         });
 
         try {
           final rawText = await _ocrService.recognizeText(path);
           state.ocrRawText = rawText;
-
-          final lastReading = state.item.resumo.ultimaLeitura?.valorLeitura;
-          final ocrResult = _viewModel.processOcrText(rawText, lastReading);
-
-          setState(() {
-            if (ocrResult.autoFillValue != null) {
-              state.controller.text = ocrResult.autoFillValue!.toString();
-            } else {
-              state.ocrSuggestions = ocrResult.suggestions;
-            }
-          });
         } catch (e) {
           debugPrint('Erro no processamento OCR: $e');
         } finally {
@@ -267,7 +256,7 @@ class _PreventivoInternosViewState extends State<PreventivoInternosView> {
           fotoDescricao: state.ocrRawText,
         ),
       );
-      
+
       setState(() {
         state.justSaved = true;
         state.focusNode.unfocus();
@@ -320,10 +309,7 @@ class _PreventivoInternosViewState extends State<PreventivoInternosView> {
     }
   }
 
-  Future<void> _coletarLeitura(
-    PontoConsumo ponto,
-    String grupoNome,
-  ) async {
+  Future<void> _coletarLeitura(PontoConsumo ponto, String grupoNome) async {
     final navigator = Navigator.of(context);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     final grupo = await widget.grupoRepository.findById(ponto.grupoId);
@@ -391,10 +377,7 @@ class _PreventivoInternosViewState extends State<PreventivoInternosView> {
           for (final item in entry.value) ...[
             _PontoInternoCard(
               item: item,
-              onTap: () => _coletarLeitura(
-                item.resumo.ponto,
-                entry.key,
-              ),
+              onTap: () => _coletarLeitura(item.resumo.ponto, entry.key),
             ),
             const SizedBox(height: 8),
           ],
@@ -406,7 +389,9 @@ class _PreventivoInternosViewState extends State<PreventivoInternosView> {
 
   Widget _buildRoteiroListView() {
     final total = _roteiroStates.length;
-    final completed = _roteiroStates.where((state) => _isItemColetado(state.item) || state.justSaved).length;
+    final completed = _roteiroStates
+        .where((state) => _isItemColetado(state.item) || state.justSaved)
+        .length;
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -451,7 +436,11 @@ class _PreventivoInternosViewState extends State<PreventivoInternosView> {
                 minHeight: 8,
               ),
               const SizedBox(height: 8),
-              const Divider(height: 1, thickness: 1, color: AppColors.primaryText),
+              const Divider(
+                height: 1,
+                thickness: 1,
+                color: AppColors.primaryText,
+              ),
               const SizedBox(height: 4),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -493,7 +482,11 @@ class _PreventivoInternosViewState extends State<PreventivoInternosView> {
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.check_circle_outline, color: AppColors.background, size: 28),
+                Icon(
+                  Icons.check_circle_outline,
+                  color: AppColors.background,
+                  size: 28,
+                ),
                 SizedBox(width: 10),
                 Text(
                   'Roteiro Preventivo Concluído!',
@@ -509,14 +502,17 @@ class _PreventivoInternosViewState extends State<PreventivoInternosView> {
           const SizedBox(height: 16),
         ],
         for (final state in _roteiroStates) ...[
-          if (!_showConcluidosInRoteiro && (_isItemColetado(state.item) || state.justSaved))
+          if (!_showConcluidosInRoteiro &&
+              (_isItemColetado(state.item) || state.justSaved))
             const SizedBox.shrink()
           else ...[
             _buildRoteiroCard(state),
             const SizedBox(height: 10),
           ],
         ],
-        const SizedBox(height: 80), // extra padding to avoid floating button overlap
+        const SizedBox(
+          height: 80,
+        ), // extra padding to avoid floating button overlap
       ],
     );
   }
@@ -525,7 +521,9 @@ class _PreventivoInternosViewState extends State<PreventivoInternosView> {
     final ponto = state.item.resumo.ponto;
     final isColetado = _isItemColetado(state.item) || state.justSaved;
     final lastReading = state.item.resumo.ultimaLeitura?.valorLeitura;
-    final readingVal = state.justSaved ? state.controller.text : (lastReading?.toString() ?? '-');
+    final readingVal = state.justSaved
+        ? state.controller.text
+        : (lastReading?.toString() ?? '-');
 
     if (isColetado) {
       // Collapsed Card for completed items
@@ -589,7 +587,10 @@ class _PreventivoInternosViewState extends State<PreventivoInternosView> {
                   ),
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.success,
                       borderRadius: BorderRadius.circular(4),
@@ -665,7 +666,10 @@ class _PreventivoInternosViewState extends State<PreventivoInternosView> {
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.primaryText, width: 2),
+                        border: Border.all(
+                          color: AppColors.primaryText,
+                          width: 2,
+                        ),
                         borderRadius: BorderRadius.circular(8),
                         color: AppColors.background,
                       ),
@@ -743,56 +747,6 @@ class _PreventivoInternosViewState extends State<PreventivoInternosView> {
               ),
             ],
 
-            if (!state.isOcrProcessing && state.ocrSuggestions.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Sugestões encontradas na foto:',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.secondaryText,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: state.ocrSuggestions.map((suggestion) {
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 6.0),
-                          child: ActionChip(
-                            backgroundColor: AppColors.background,
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            side: const BorderSide(color: AppColors.primaryAction, width: 1.5),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            label: Text(
-                              '[$suggestion]',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w900,
-                                color: AppColors.primaryAction,
-                              ),
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                state.controller.text = suggestion.toString();
-                                state.errorMessage = null;
-                              });
-                            },
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-
             if (state.errorMessage != null) ...[
               const SizedBox(height: 8),
               Text(
@@ -810,11 +764,16 @@ class _PreventivoInternosViewState extends State<PreventivoInternosView> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: state.isSaving ? null : () => _saveRoteiroLeitura(state),
+                  onPressed: state.isSaving
+                      ? null
+                      : () => _saveRoteiroLeitura(state),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.success,
                     foregroundColor: AppColors.background,
-                    side: const BorderSide(color: AppColors.primaryText, width: 2),
+                    side: const BorderSide(
+                      color: AppColors.primaryText,
+                      width: 2,
+                    ),
                     elevation: 0,
                   ),
                   icon: state.isSaving
@@ -829,10 +788,7 @@ class _PreventivoInternosViewState extends State<PreventivoInternosView> {
                       : const Icon(Icons.check, size: 20),
                   label: const Text(
                     'Confirmar Leitura',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
                   ),
                 ),
               ),
@@ -845,7 +801,8 @@ class _PreventivoInternosViewState extends State<PreventivoInternosView> {
 
   @override
   Widget build(BuildContext context) {
-    final hasSelectedGroupInItems = _selectedGroupId == null ||
+    final hasSelectedGroupInItems =
+        _selectedGroupId == null ||
         _grupos.any((g) => g.id == _selectedGroupId);
     final dropdownValue = hasSelectedGroupInItems ? _selectedGroupId : null;
 
@@ -861,25 +818,37 @@ class _PreventivoInternosViewState extends State<PreventivoInternosView> {
                     child: SizedBox(
                       height: 36,
                       child: OutlinedButton.icon(
-                        onPressed: _viewModel.isInRoteiroMode ? _stopRoteiro : _startRoteiro,
+                        onPressed: _viewModel.isInRoteiroMode
+                            ? _stopRoteiro
+                            : _startRoteiro,
                         style: OutlinedButton.styleFrom(
                           side: BorderSide(
-                            color: _viewModel.isInRoteiroMode ? AppColors.error : AppColors.primaryText,
+                            color: _viewModel.isInRoteiroMode
+                                ? AppColors.error
+                                : AppColors.primaryText,
                             width: 2,
                           ),
-                          backgroundColor: _viewModel.isInRoteiroMode ? AppColors.error : AppColors.background,
-                          foregroundColor: _viewModel.isInRoteiroMode ? AppColors.background : AppColors.primaryText,
+                          backgroundColor: _viewModel.isInRoteiroMode
+                              ? AppColors.error
+                              : AppColors.background,
+                          foregroundColor: _viewModel.isInRoteiroMode
+                              ? AppColors.background
+                              : AppColors.primaryText,
                           padding: const EdgeInsets.symmetric(horizontal: 10),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(6),
                           ),
                         ),
                         icon: Icon(
-                          _viewModel.isInRoteiroMode ? Icons.stop : Icons.play_arrow,
+                          _viewModel.isInRoteiroMode
+                              ? Icons.stop
+                              : Icons.play_arrow,
                           size: 18,
                         ),
                         label: Text(
-                          _viewModel.isInRoteiroMode ? 'Parar' : 'Iniciar Roteiro',
+                          _viewModel.isInRoteiroMode
+                              ? 'Parar'
+                              : 'Iniciar Roteiro',
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w900,
@@ -897,7 +866,10 @@ class _PreventivoInternosViewState extends State<PreventivoInternosView> {
             if (!_viewModel.isInRoteiroMode) ...[
               // Group Filter Dropdown
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: DropdownButtonFormField<int?>(
                   value: dropdownValue,
                   decoration: const InputDecoration(
@@ -910,10 +882,12 @@ class _PreventivoInternosViewState extends State<PreventivoInternosView> {
                       value: null,
                       child: Text('Todos os grupos'),
                     ),
-                    ..._grupos.map((g) => DropdownMenuItem<int?>(
-                      value: g.id,
-                      child: Text(g.nome),
-                    )),
+                    ..._grupos.map(
+                      (g) => DropdownMenuItem<int?>(
+                        value: g.id,
+                        child: Text(g.nome),
+                      ),
+                    ),
                   ],
                   onChanged: (val) {
                     setState(() {
@@ -955,10 +929,10 @@ class _PreventivoInternosViewState extends State<PreventivoInternosView> {
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _groupedItems.isEmpty
-                      ? const _EmptyState()
-                      : _viewModel.isInRoteiroMode
-                          ? _buildRoteiroListView()
-                          : _buildStandardListView(),
+                  ? const _EmptyState()
+                  : _viewModel.isInRoteiroMode
+                  ? _buildRoteiroListView()
+                  : _buildStandardListView(),
             ),
           ],
         ),
@@ -1002,9 +976,13 @@ class _PontoInternoCard extends StatelessWidget {
     final leitura = item.resumo.ultimaLeitura;
     final readingText = leitura == null
         ? 'Sem leitura'
+        : ponto.isComposto
+        ? isColetado
+              ? '03: ${leitura.valorLeitura} | 103: ${leitura.valorProducao ?? "-"}'
+              : 'Ultima 03: ${leitura.valorLeitura} | 103: ${leitura.valorProducao ?? "-"}'
         : isColetado
-            ? 'Leitura: ${leitura.valorLeitura}'
-            : 'Última: ${leitura.valorLeitura}';
+        ? 'Leitura: ${leitura.valorLeitura}'
+        : 'Última: ${leitura.valorLeitura}';
 
     return Card(
       color: AppColors.background,
@@ -1026,7 +1004,8 @@ class _PontoInternoCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (ponto.instalacao != null && ponto.instalacao!.trim().isNotEmpty)
+                    if (ponto.instalacao != null &&
+                        ponto.instalacao!.trim().isNotEmpty)
                       Text(
                         'Inst. ${ponto.instalacao}',
                         style: const TextStyle(
@@ -1040,7 +1019,8 @@ class _PontoInternoCard extends StatelessWidget {
                         ponto.numeroMedidor != null &&
                         ponto.numeroMedidor!.trim().isNotEmpty)
                       const SizedBox(height: 2),
-                    if (ponto.numeroMedidor != null && ponto.numeroMedidor!.trim().isNotEmpty)
+                    if (ponto.numeroMedidor != null &&
+                        ponto.numeroMedidor!.trim().isNotEmpty)
                       Text(
                         'Med. ${ponto.numeroMedidor}',
                         style: const TextStyle(
@@ -1049,8 +1029,10 @@ class _PontoInternoCard extends StatelessWidget {
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-                    if ((ponto.instalacao == null || ponto.instalacao!.trim().isEmpty) &&
-                        (ponto.numeroMedidor == null || ponto.numeroMedidor!.trim().isEmpty))
+                    if ((ponto.instalacao == null ||
+                            ponto.instalacao!.trim().isEmpty) &&
+                        (ponto.numeroMedidor == null ||
+                            ponto.numeroMedidor!.trim().isEmpty))
                       const Text(
                         '-',
                         style: TextStyle(
@@ -1059,7 +1041,8 @@ class _PontoInternoCard extends StatelessWidget {
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-                    if (ponto.endereco != null && ponto.endereco!.isNotEmpty) ...[
+                    if (ponto.endereco != null &&
+                        ponto.endereco!.isNotEmpty) ...[
                       const SizedBox(height: 6),
                       Text(
                         ponto.endereco!,
@@ -1078,19 +1061,22 @@ class _PontoInternoCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
-                      color:
-                          isColetado ? AppColors.success : const Color(0xFFFFC107),
+                      color: isColetado
+                          ? AppColors.success
+                          : const Color(0xFFFFC107),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
                       isColetado ? 'COLETADO' : 'PENDENTE',
                       style: TextStyle(
-                        color:
-                            isColetado
-                                ? AppColors.background
-                                : AppColors.primaryText,
+                        color: isColetado
+                            ? AppColors.background
+                            : AppColors.primaryText,
                         fontSize: 12,
                         fontWeight: FontWeight.w900,
                       ),
@@ -1117,6 +1103,7 @@ class _PontoInternoCard extends StatelessWidget {
   }
 
   bool _checkColetado(PontoInternoResumo item) {
+    if (item.resumo.ponto.isDesabitado) return true;
     final leitura = item.resumo.ultimaLeitura;
     if (leitura == null) return false;
     final now = DateTime.now();
@@ -1155,7 +1142,6 @@ class _RoteiroItemState {
   String? ocrRawText;
   bool isSaving = false;
   bool isOcrProcessing = false;
-  List<int> ocrSuggestions = const [];
   bool justSaved = false;
   String? errorMessage;
 

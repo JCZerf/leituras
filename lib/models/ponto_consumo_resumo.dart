@@ -16,6 +16,7 @@ class PontoConsumoResumo {
               id: map['ultima_leitura_id'] as int?,
               pontoConsumoId: map['id'] as int,
               valorLeitura: map['ultima_valor_leitura'] as int,
+              valorProducao: map['ultima_valor_producao'] as int?,
               dataLeitura: DateTime.parse(
                 (map['ultima_data_leitura'] as String).replaceFirst(' ', 'T'),
               ),

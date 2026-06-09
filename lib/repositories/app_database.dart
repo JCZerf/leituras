@@ -7,7 +7,7 @@ class AppDatabase {
       _databasePath = databasePath;
 
   static const String databaseName = 'leituras.db';
-  static const int databaseVersion = 3;
+  static const int databaseVersion = 5;
 
   final DatabaseFactory? _databaseFactory;
   final String? _databasePath;
@@ -39,6 +39,12 @@ class AppDatabase {
           }
           if (oldVersion < 3) {
             await _migrateToVersion3(db);
+          }
+          if (oldVersion < 4) {
+            await _migrateToVersion4(db);
+          }
+          if (oldVersion < 5) {
+            await _migrateToVersion5(db);
           }
         },
       ),
@@ -75,6 +81,8 @@ class AppDatabase {
         numero_medidor TEXT,
         endereco TEXT,
         is_interno INTEGER NOT NULL DEFAULT 0,
+        is_composto INTEGER NOT NULL DEFAULT 0,
+        is_desabitado INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY (grupo_id) REFERENCES grupos (id) ON DELETE RESTRICT
       )
     ''');
@@ -91,6 +99,7 @@ class AppDatabase {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         ponto_consumo_id INTEGER NOT NULL,
         valor_leitura INTEGER NOT NULL,
+        valor_producao INTEGER,
         data_leitura TEXT NOT NULL,
         foto_path TEXT,
         foto_descricao TEXT,
@@ -141,9 +150,49 @@ class AppDatabase {
   }
 
   Future<void> _migrateToVersion3(Database db) async {
-    await db.execute(
-      'ALTER TABLE pontos_consumo ADD COLUMN is_interno INTEGER NOT NULL DEFAULT 0',
+    await _addColumnIfMissing(
+      db,
+      table: 'pontos_consumo',
+      column: 'is_interno',
+      definition: 'is_interno INTEGER NOT NULL DEFAULT 0',
     );
+  }
+
+  Future<void> _migrateToVersion4(Database db) async {
+    await _addColumnIfMissing(
+      db,
+      table: 'pontos_consumo',
+      column: 'is_composto',
+      definition: 'is_composto INTEGER NOT NULL DEFAULT 0',
+    );
+    await _addColumnIfMissing(
+      db,
+      table: 'historico_leituras',
+      column: 'valor_producao',
+      definition: 'valor_producao INTEGER',
+    );
+  }
+
+  Future<void> _migrateToVersion5(Database db) async {
+    await _addColumnIfMissing(
+      db,
+      table: 'pontos_consumo',
+      column: 'is_desabitado',
+      definition: 'is_desabitado INTEGER NOT NULL DEFAULT 0',
+    );
+  }
+
+  Future<void> _addColumnIfMissing(
+    Database db, {
+    required String table,
+    required String column,
+    required String definition,
+  }) async {
+    final columns = await db.rawQuery('PRAGMA table_info($table)');
+    final exists = columns.any((item) => item['name'] == column);
+    if (!exists) {
+      await db.execute('ALTER TABLE $table ADD COLUMN $definition');
+    }
   }
 
   String _formatSqliteDateTime(DateTime value) {
@@ -152,5 +201,4 @@ class AppDatabase {
     return '${local.year}-${two(local.month)}-${two(local.day)} '
         '${two(local.hour)}:${two(local.minute)}:${two(local.second)}';
   }
-
 }

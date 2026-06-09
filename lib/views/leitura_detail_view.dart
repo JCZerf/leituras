@@ -110,14 +110,18 @@ class _LeituraDetailViewState extends State<LeituraDetailView> {
                           .toList();
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) => EstimadorView(initialReadings: values),
+                          builder: (_) =>
+                              EstimadorView(initialReadings: values),
                         ),
                       );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.background,
                       foregroundColor: AppColors.primaryAction,
-                      side: const BorderSide(color: AppColors.primaryAction, width: 2),
+                      side: const BorderSide(
+                        color: AppColors.primaryAction,
+                        width: 2,
+                      ),
                     ),
                     icon: const Icon(Icons.show_chart),
                     label: const Text('Ver Estimativa de Consumo'),
@@ -137,7 +141,9 @@ class _LeituraDetailViewState extends State<LeituraDetailView> {
                 else if (historico.isEmpty)
                   const _EmptyTimeline()
                 else
-                  ...historico.map((h) => _TimelineItem(h, ponto: widget.ponto)),
+                  ...historico.map(
+                    (h) => _TimelineItem(h, ponto: widget.ponto),
+                  ),
               ],
             );
           },
@@ -160,6 +166,8 @@ class _PontoHeader extends StatelessWidget {
       _DetailField('Instalacao', ponto.instalacao),
       _DetailField('Numero do medidor', ponto.numeroMedidor),
       _DetailField('Endereco', ponto.endereco),
+      _DetailField('Tipo', ponto.isComposto ? 'Composto 03/103' : 'Simples'),
+      _DetailField('Situacao', ponto.isDesabitado ? 'Desabitado' : null),
     ].where((field) => field.value != null && field.value!.isNotEmpty);
 
     return Container(
@@ -195,27 +203,33 @@ class _TimelineItem extends StatelessWidget {
 
   Future<void> _share(BuildContext context) async {
     final dateStr = _formatDate(historico.dataLeitura);
-    final text = 'Leitura: ${historico.valorLeitura}\n'
+    final text =
+        '${_readingShareText()}\n'
         'Data: $dateStr\n'
         'Instalacao: ${ponto.instalacao ?? "-"}\n'
         'Medidor: ${ponto.numeroMedidor ?? "-"}';
 
     try {
       if (historico.fotoPath != null) {
-        await Share.shareXFiles(
-          [XFile(historico.fotoPath!)],
-          text: text,
-        );
+        await Share.shareXFiles([XFile(historico.fotoPath!)], text: text);
       } else {
         await Share.share(text);
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao compartilhar: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro ao compartilhar: $e')));
       }
     }
+  }
+
+  String _readingShareText() {
+    if (!ponto.isComposto) {
+      return 'Leitura: ${historico.valorLeitura}';
+    }
+    return '03 Consumo: ${historico.valorLeitura}\n'
+        '103 Producao: ${historico.valorProducao ?? "-"}';
   }
 
   @override
@@ -244,12 +258,26 @@ class _TimelineItem extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            historico.valorLeitura.toString(),
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.primaryText,
-                            ),
+                            ponto.isComposto
+                                ? '03: ${historico.valorLeitura}'
+                                : historico.valorLeitura.toString(),
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.primaryText,
+                                ),
                           ),
+                          if (ponto.isComposto) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              '103: ${historico.valorProducao ?? "-"}',
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.primaryText,
+                                  ),
+                            ),
+                          ],
                           const SizedBox(height: 6),
                           Text(
                             _formatDate(historico.dataLeitura),
@@ -259,7 +287,8 @@ class _TimelineItem extends StatelessWidget {
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          if (historico.fotoDescricao != null && historico.fotoDescricao!.isNotEmpty) ...[
+                          if (historico.fotoDescricao != null &&
+                              historico.fotoDescricao!.isNotEmpty) ...[
                             const SizedBox(height: 10),
                             Text(
                               historico.fotoDescricao!,
@@ -281,7 +310,8 @@ class _TimelineItem extends StatelessWidget {
                               builder: (_) => FotoViewerView(
                                 fotoPath: historico.fotoPath!,
                                 descricao: historico.fotoDescricao,
-                                shareText: 'Leitura: ${historico.valorLeitura}\n'
+                                shareText:
+                                    '${_readingShareText()}\n'
                                     'Data: ${_formatDate(historico.dataLeitura)}\n'
                                     'Instalacao: ${ponto.instalacao ?? "-"}',
                               ),
@@ -292,7 +322,10 @@ class _TimelineItem extends StatelessWidget {
                           width: 64,
                           height: 64,
                           decoration: BoxDecoration(
-                            border: Border.all(color: AppColors.primaryText, width: 1.5),
+                            border: Border.all(
+                              color: AppColors.primaryText,
+                              width: 1.5,
+                            ),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: ClipRRect(
@@ -314,7 +347,11 @@ class _TimelineItem extends StatelessWidget {
               ),
             ],
           ),
-          const Divider(height: 24, thickness: 1.5, color: AppColors.primaryText),
+          const Divider(
+            height: 24,
+            thickness: 1.5,
+            color: AppColors.primaryText,
+          ),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
@@ -326,7 +363,10 @@ class _TimelineItem extends StatelessWidget {
                   style: TextStyle(fontWeight: FontWeight.w800),
                 ),
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   foregroundColor: AppColors.primaryText,
                 ),
               ),

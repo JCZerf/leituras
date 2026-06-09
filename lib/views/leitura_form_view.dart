@@ -43,6 +43,7 @@ class _LeituraFormViewState extends State<LeituraFormView> {
   late final TextEditingController _instalacaoController;
   late final TextEditingController _numeroMedidorController;
   late final TextEditingController _leituraController;
+  late final TextEditingController _producaoController;
   late final TextEditingController _enderecoController;
   late final TextEditingController _fotoDescricaoController;
   bool _isSaving = false;
@@ -50,10 +51,10 @@ class _LeituraFormViewState extends State<LeituraFormView> {
   String? _fotoPath;
   bool _saved = false;
   bool _isInterno = false;
+  bool _isComposto = false;
+  bool _isDesabitado = false;
 
-  int? _ultimoValorLeitura;
   bool _isOcrProcessing = false;
-  List<int> _ocrSuggestions = [];
 
   bool get _isNovoLancamento => widget.ponto != null;
 
@@ -75,20 +76,11 @@ class _LeituraFormViewState extends State<LeituraFormView> {
       text: ponto?.numeroMedidor ?? '',
     );
     _leituraController = TextEditingController();
+    _producaoController = TextEditingController();
     _enderecoController = TextEditingController(text: ponto?.endereco ?? '');
     _fotoDescricaoController = TextEditingController();
-
-    if (ponto != null && ponto.id != null) {
-      widget.historicoLeituraRepository
-          .findByPontoConsumoId(ponto.id!)
-          .then((history) {
-        if (history.isNotEmpty && mounted) {
-          setState(() {
-            _ultimoValorLeitura = history.first.valorLeitura;
-          });
-        }
-      });
-    }
+    _isComposto = ponto?.isComposto ?? false;
+    _isDesabitado = ponto?.isDesabitado ?? false;
   }
 
   @override
@@ -96,6 +88,7 @@ class _LeituraFormViewState extends State<LeituraFormView> {
     _instalacaoController.dispose();
     _numeroMedidorController.dispose();
     _leituraController.dispose();
+    _producaoController.dispose();
     _enderecoController.dispose();
     _fotoDescricaoController.dispose();
     if (!_saved && _fotoPath != null) {
@@ -111,7 +104,6 @@ class _LeituraFormViewState extends State<LeituraFormView> {
         setState(() {
           _fotoPath = path;
           _isOcrProcessing = true;
-          _ocrSuggestions = [];
         });
 
         try {
@@ -119,15 +111,6 @@ class _LeituraFormViewState extends State<LeituraFormView> {
           if (mounted) {
             setState(() {
               _fotoDescricaoController.text = rawText;
-            });
-
-            final ocrResult = _viewModel.processOcrText(rawText, _ultimoValorLeitura);
-            setState(() {
-              if (ocrResult.autoFillValue != null) {
-                _leituraController.text = ocrResult.autoFillValue!.toString();
-              } else {
-                _ocrSuggestions = ocrResult.suggestions;
-              }
             });
           }
         } catch (ocrError) {
@@ -154,7 +137,6 @@ class _LeituraFormViewState extends State<LeituraFormView> {
       } catch (_) {}
       setState(() {
         _fotoPath = null;
-        _ocrSuggestions = [];
       });
     }
   }
@@ -184,6 +166,7 @@ class _LeituraFormViewState extends State<LeituraFormView> {
         await _viewModel.addHistorico(
           pontoConsumoId: widget.ponto!.id,
           leitura: _leituraController.text,
+          producao: _producaoController.text,
           fotoPath: _fotoPath,
           fotoDescricao: _fotoDescricaoController.text,
         );
@@ -197,6 +180,9 @@ class _LeituraFormViewState extends State<LeituraFormView> {
           fotoPath: _fotoPath,
           fotoDescricao: _fotoDescricaoController.text,
           isInterno: _isInterno,
+          isComposto: _isComposto,
+          isDesabitado: _isDesabitado,
+          producao: _producaoController.text,
         );
       }
       _saved = true;
@@ -254,7 +240,9 @@ class _LeituraFormViewState extends State<LeituraFormView> {
                           prefixIcon: Icon(Icons.speed_outlined),
                         ),
                         inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp('[a-zA-Z0-9]')),
+                          FilteringTextInputFormatter.allow(
+                            RegExp('[a-zA-Z0-9]'),
+                          ),
                         ],
                         textInputAction: TextInputAction.next,
                         validator: (value) =>
@@ -265,7 +253,8 @@ class _LeituraFormViewState extends State<LeituraFormView> {
                         controller: _enderecoController,
                         decoration: const InputDecoration(
                           labelText: 'Endereco',
-                          helperText: 'Importante: Detalhe bem o local (ex: Apto 302, Fundo do galpao trancado)',
+                          helperText:
+                              'Importante: Detalhe bem o local (ex: Apto 302, Fundo do galpao trancado)',
                           helperMaxLines: 2,
                           prefixIcon: Icon(Icons.location_on_outlined),
                         ),
@@ -274,11 +263,14 @@ class _LeituraFormViewState extends State<LeituraFormView> {
                       const SizedBox(height: 16),
                       SwitchListTile(
                         title: const Text(
-                          'Este medidor e INTERNO?',
-                          style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.primaryText),
+                          'Medidor interno?',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primaryText,
+                          ),
                         ),
                         subtitle: const Text(
-                          'Exige agendamento / contato previo',
+                          'Exige coletar antes / contato previo',
                           style: TextStyle(fontWeight: FontWeight.w600),
                         ),
                         value: _isInterno,
@@ -290,12 +282,59 @@ class _LeituraFormViewState extends State<LeituraFormView> {
                         activeColor: AppColors.primaryAction,
                         contentPadding: EdgeInsets.zero,
                       ),
+                      SwitchListTile(
+                        title: const Text(
+                          'Lugar desabitado?',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primaryText,
+                          ),
+                        ),
+                        subtitle: const Text(
+                          'Não aparecerá como pendente se for interno',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        value: _isDesabitado,
+                        onChanged: (val) {
+                          setState(() {
+                            _isDesabitado = val;
+                          });
+                        },
+                        activeColor: AppColors.primaryAction,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      SwitchListTile(
+                        title: const Text(
+                          'Medidor GD 03/103?',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primaryText,
+                          ),
+                        ),
+                        subtitle: const Text(
+                          'Permite registrar consumo 03 e producao 103',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        value: _isComposto,
+                        onChanged: (val) {
+                          setState(() {
+                            _isComposto = val;
+                            if (!val) {
+                              _producaoController.clear();
+                            }
+                          });
+                        },
+                        activeColor: AppColors.primaryAction,
+                        contentPadding: EdgeInsets.zero,
+                      ),
                     ],
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _leituraController,
-                      decoration: const InputDecoration(
-                        labelText: 'Valor da leitura',
+                      decoration: InputDecoration(
+                        labelText: _isComposto
+                            ? 'Leitura 03 - Consumo'
+                            : 'Valor da leitura',
                         prefixIcon: Icon(Icons.pin_outlined),
                       ),
                       keyboardType: TextInputType.number,
@@ -303,8 +342,26 @@ class _LeituraFormViewState extends State<LeituraFormView> {
                         FilteringTextInputFormatter.digitsOnly,
                         LengthLimitingTextInputFormatter(5),
                       ],
-                      validator: (value) => LeituraValidators.leitura(value ?? ''),
+                      validator: (value) =>
+                          LeituraValidators.leitura(value ?? ''),
                     ),
+                    if (_isComposto) ...[
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _producaoController,
+                        decoration: const InputDecoration(
+                          labelText: 'Leitura 103 - Producao',
+                          prefixIcon: Icon(Icons.bolt_outlined),
+                        ),
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(5),
+                        ],
+                        validator: (value) =>
+                            LeituraValidators.leitura(value ?? ''),
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     if (_fotoPath == null)
                       OutlinedButton.icon(
@@ -316,13 +373,18 @@ class _LeituraFormViewState extends State<LeituraFormView> {
                       Container(
                         height: 100,
                         decoration: BoxDecoration(
-                          border: Border.all(color: AppColors.primaryText, width: 1.5),
+                          border: Border.all(
+                            color: AppColors.primaryText,
+                            width: 1.5,
+                          ),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
                           children: [
                             ClipRRect(
-                              borderRadius: const BorderRadius.horizontal(left: Radius.circular(6)),
+                              borderRadius: const BorderRadius.horizontal(
+                                left: Radius.circular(6),
+                              ),
                               child: Image.file(
                                 File(_fotoPath!),
                                 width: 100,
@@ -340,7 +402,10 @@ class _LeituraFormViewState extends State<LeituraFormView> {
                             IconButton(
                               tooltip: 'Excluir foto',
                               onPressed: _deletePhoto,
-                              icon: const Icon(Icons.delete_outline, color: AppColors.error),
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                color: AppColors.error,
+                              ),
                             ),
                           ],
                         ),
@@ -389,7 +454,10 @@ class _LeituraFormViewState extends State<LeituraFormView> {
                       top: BorderSide(color: AppColors.primaryText, width: 1.5),
                     ),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 16,
+                  ),
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -408,62 +476,6 @@ class _LeituraFormViewState extends State<LeituraFormView> {
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
                           color: AppColors.primaryText,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              if (!_isOcrProcessing && _ocrSuggestions.isNotEmpty)
-                Container(
-                  decoration: const BoxDecoration(
-                    color: AppColors.background,
-                    border: Border(
-                      top: BorderSide(color: AppColors.primaryText, width: 1.5),
-                    ),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        'Sugestões encontradas na foto:',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.secondaryText,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: _ocrSuggestions.map((suggestion) {
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 8.0),
-                              child: ActionChip(
-                                backgroundColor: AppColors.background,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                side: const BorderSide(color: AppColors.primaryAction, width: 2),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                label: Text(
-                                  '[$suggestion]',
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w900,
-                                    color: AppColors.primaryAction,
-                                  ),
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    _leituraController.text = suggestion.toString();
-                                  });
-                                },
-                              ),
-                            );
-                          }).toList(),
                         ),
                       ),
                     ],
@@ -504,10 +516,12 @@ class _PontoBanner extends StatelessWidget {
       if (ponto.numeroMedidor != null) 'Medidor ${ponto.numeroMedidor}',
     ].join(' | ');
 
+    final subtitle = ponto.endereco ?? 'Medidor cadastrado';
+
     return _Banner(
       icon: Icons.speed_outlined,
       title: identificadores,
-      subtitle: ponto.endereco ?? 'Medidor cadastrado',
+      subtitle: ponto.isComposto ? '$subtitle - Composto 03/103' : subtitle,
     );
   }
 }

@@ -32,10 +32,7 @@ class PreventivoInternosViewModel {
       }
     }
 
-    return OcrProcessingResult(
-      suggestions: candidates,
-      autoFillValue: null,
-    );
+    return OcrProcessingResult(suggestions: candidates, autoFillValue: null);
   }
 
   /// Loads all internal points and groups them by group name.
@@ -54,6 +51,7 @@ class PreventivoInternosViewModel {
         return false;
       }
       if (showAll) return true;
+      if (item.resumo.ponto.isDesabitado) return false;
       final leitura = item.resumo.ultimaLeitura;
       if (leitura == null) return true;
       return leitura.dataLeitura.year != now.year ||

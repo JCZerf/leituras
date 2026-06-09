@@ -27,6 +27,9 @@ class LeituraFormViewModel {
     String? fotoPath,
     String? fotoDescricao,
     bool isInterno = false,
+    bool isComposto = false,
+    bool isDesabitado = false,
+    String? producao,
   }) async {
     final errors = [
       LeituraValidators.grupo(grupoId),
@@ -36,6 +39,7 @@ class LeituraFormViewModel {
       ),
       LeituraValidators.numeroMedidor(numeroMedidor),
       LeituraValidators.leitura(leitura),
+      if (isComposto) LeituraValidators.leitura(producao ?? ''),
     ].whereType<String>().toList();
 
     if (errors.isNotEmpty) {
@@ -54,11 +58,14 @@ class LeituraFormViewModel {
         numeroMedidor: _optional(numeroMedidor),
         endereco: _optional(endereco),
         isInterno: isInterno,
+        isComposto: isComposto,
+        isDesabitado: isDesabitado,
       ),
     );
     await addHistorico(
       pontoConsumoId: pontoId,
       leitura: leitura,
+      producao: producao,
       fotoPath: fotoPath,
       fotoDescricao: fotoDescricao,
     );
@@ -67,6 +74,7 @@ class LeituraFormViewModel {
   Future<void> addHistorico({
     required int? pontoConsumoId,
     required String leitura,
+    String? producao,
     String? fotoPath,
     String? fotoDescricao,
   }) async {
@@ -84,10 +92,18 @@ class LeituraFormViewModel {
       throw ArgumentError('Selecione um medidor existente.');
     }
 
+    if (ponto.isComposto) {
+      final producaoError = LeituraValidators.leitura(producao ?? '');
+      if (producaoError != null) {
+        throw ArgumentError(producaoError);
+      }
+    }
+
     await _historicoLeituraRepository.insert(
       HistoricoLeitura(
         pontoConsumoId: pontoConsumoId,
         valorLeitura: int.parse(leitura.trim()),
+        valorProducao: ponto.isComposto ? int.parse(producao!.trim()) : null,
         dataLeitura: DateTime.now(),
         fotoPath: fotoPath,
         fotoDescricao: _optional(fotoDescricao),
@@ -117,10 +133,7 @@ class LeituraFormViewModel {
       }
     }
 
-    return OcrProcessingResult(
-      suggestions: candidates,
-      autoFillValue: null,
-    );
+    return OcrProcessingResult(suggestions: candidates, autoFillValue: null);
   }
 
   static String? _optional(String? value) {
@@ -133,8 +146,5 @@ class OcrProcessingResult {
   final List<int> suggestions;
   final int? autoFillValue;
 
-  const OcrProcessingResult({
-    required this.suggestions,
-    this.autoFillValue,
-  });
+  const OcrProcessingResult({required this.suggestions, this.autoFillValue});
 }

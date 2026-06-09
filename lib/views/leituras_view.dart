@@ -54,7 +54,8 @@ class _LeiturasViewState extends State<LeiturasView> {
   int get _pendingInternalMetersCount {
     final now = DateTime.now();
     return _pontos.where((resumo) {
-      if (!resumo.ponto.isInterno) return false;
+      final ponto = resumo.ponto;
+      if (!ponto.isInterno || ponto.isDesabitado) return false;
       final leitura = resumo.ultimaLeitura;
       if (leitura == null) return true;
       return leitura.dataLeitura.year != now.year ||
@@ -229,10 +230,7 @@ class _LeiturasViewState extends State<LeiturasView> {
               },
             ),
             ListTile(
-              leading: const Icon(
-                Icons.delete_outline,
-                color: AppColors.error,
-              ),
+              leading: const Icon(Icons.delete_outline, color: AppColors.error),
               title: const Text(
                 'Excluir medidor',
                 style: TextStyle(
@@ -257,9 +255,7 @@ class _LeiturasViewState extends State<LeiturasView> {
     final grupo = widget.appState.selectedGroup;
     final pontos = _filteredPontos;
 
-    final appBarTitle = grupo == null
-        ? 'Leituras'
-        : 'Leituras: ${grupo.nome}';
+    final appBarTitle = grupo == null ? 'Leituras' : 'Leituras: ${grupo.nome}';
 
     return Scaffold(
       appBar: LeituraAppBar(
@@ -396,7 +392,8 @@ class _LeiturasViewState extends State<LeiturasView> {
                               return _MeterTile(
                                 resumo: resumo,
                                 onTap: () => _openDetail(resumo.ponto),
-                                onLongPress: () => _showMeterActions(resumo.ponto),
+                                onLongPress: () =>
+                                    _showMeterActions(resumo.ponto),
                               );
                             },
                           ),
@@ -426,6 +423,8 @@ class _MeterTile extends StatelessWidget {
 
     final readingText = leitura == null
         ? 'Sem leitura'
+        : ponto.isComposto
+        ? '03: ${leitura.valorLeitura} | 103: ${leitura.valorProducao ?? "-"}'
         : 'Leitura: ${leitura.valorLeitura}';
 
     return Card(
@@ -450,7 +449,8 @@ class _MeterTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (ponto.instalacao != null && ponto.instalacao!.trim().isNotEmpty)
+                    if (ponto.instalacao != null &&
+                        ponto.instalacao!.trim().isNotEmpty)
                       Text(
                         'Inst. ${ponto.instalacao}',
                         maxLines: 1,
@@ -466,7 +466,8 @@ class _MeterTile extends StatelessWidget {
                         ponto.numeroMedidor != null &&
                         ponto.numeroMedidor!.trim().isNotEmpty)
                       const SizedBox(height: 2),
-                    if (ponto.numeroMedidor != null && ponto.numeroMedidor!.trim().isNotEmpty)
+                    if (ponto.numeroMedidor != null &&
+                        ponto.numeroMedidor!.trim().isNotEmpty)
                       Text(
                         'Med. ${ponto.numeroMedidor}',
                         maxLines: 1,
@@ -477,8 +478,10 @@ class _MeterTile extends StatelessWidget {
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-                    if ((ponto.instalacao == null || ponto.instalacao!.trim().isEmpty) &&
-                        (ponto.numeroMedidor == null || ponto.numeroMedidor!.trim().isEmpty))
+                    if ((ponto.instalacao == null ||
+                            ponto.instalacao!.trim().isEmpty) &&
+                        (ponto.numeroMedidor == null ||
+                            ponto.numeroMedidor!.trim().isEmpty))
                       const Text(
                         '-',
                         style: TextStyle(
@@ -491,9 +494,7 @@ class _MeterTile extends StatelessWidget {
                       const SizedBox(height: 4),
                       Row(
                         mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildInternoBadge(),
-                        ],
+                        children: [_buildInternoBadge()],
                       ),
                     ],
                   ],
@@ -522,12 +523,6 @@ class _MeterTile extends StatelessWidget {
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               ),
-              const SizedBox(width: 4),
-              const Icon(
-                Icons.chevron_right,
-                color: AppColors.secondaryText,
-                size: 20,
-              ),
             ],
           ),
         ),
@@ -537,10 +532,7 @@ class _MeterTile extends StatelessWidget {
 
   Widget _buildInternoBadge() {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 6,
-        vertical: 2,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: AppColors.primaryText,
         borderRadius: BorderRadius.circular(4),
@@ -548,11 +540,7 @@ class _MeterTile extends StatelessWidget {
       child: const Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.lock,
-            color: AppColors.background,
-            size: 11,
-          ),
+          Icon(Icons.lock, color: AppColors.background, size: 11),
           SizedBox(width: 3),
           Text(
             'INTERNO',
