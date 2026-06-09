@@ -54,12 +54,12 @@ class _MyAppState extends State<MyApp> {
           onError: AppColors.background,
         ),
         appBarTheme: const AppBarTheme(
-          backgroundColor: AppColors.background,
-          foregroundColor: AppColors.primaryText,
+          backgroundColor: AppColors.appBarBackground,
+          foregroundColor: AppColors.appBarForeground,
           elevation: 0,
           centerTitle: false,
           titleTextStyle: TextStyle(
-            color: AppColors.primaryText,
+            color: AppColors.appBarForeground,
             fontSize: 22,
             fontWeight: FontWeight.w700,
           ),

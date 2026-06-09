@@ -421,12 +421,6 @@ class _MeterTile extends StatelessWidget {
     final ponto = resumo.ponto;
     final leitura = resumo.ultimaLeitura;
 
-    final readingText = leitura == null
-        ? 'Sem leitura'
-        : ponto.isComposto
-        ? '03: ${leitura.valorLeitura} | 103: ${leitura.valorProducao ?? "-"}'
-        : 'Leitura: ${leitura.valorLeitura}';
-
     return Card(
       color: AppColors.background,
       elevation: 0,
@@ -501,16 +495,43 @@ class _MeterTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                readingText,
-                style: TextStyle(
-                  color: leitura == null
-                      ? AppColors.secondaryText
-                      : AppColors.primaryText,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
+              if (leitura != null && ponto.isComposto)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '03: ${leitura.valorLeitura}',
+                      style: const TextStyle(
+                        color: AppColors.primaryText,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '103: ${leitura.valorProducao ?? "-"}',
+                      style: const TextStyle(
+                        color: AppColors.primaryText,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                )
+              else
+                Text(
+                  leitura == null
+                      ? 'Sem leitura'
+                      : 'Leitura: ${leitura.valorLeitura}',
+                  style: TextStyle(
+                    color: leitura == null
+                        ? AppColors.secondaryText
+                        : AppColors.primaryText,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
               const SizedBox(width: 4),
               IconButton(
                 tooltip: 'Mais opcoes',

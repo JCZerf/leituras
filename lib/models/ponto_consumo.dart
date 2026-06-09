@@ -33,7 +33,9 @@ class PontoConsumo {
       id: id ?? this.id,
       grupoId: grupoId ?? this.grupoId,
       instalacao: instalacao ?? this.instalacao,
-      numeroMedidor: numeroMedidor ?? this.numeroMedidor,
+      numeroMedidor: _normalizeNumeroMedidor(
+        numeroMedidor ?? this.numeroMedidor,
+      ),
       endereco: endereco ?? this.endereco,
       isInterno: isInterno ?? this.isInterno,
       isComposto: isComposto ?? this.isComposto,
@@ -46,7 +48,7 @@ class PontoConsumo {
       'id': id,
       'grupo_id': grupoId,
       'instalacao': instalacao,
-      'numero_medidor': numeroMedidor,
+      'numero_medidor': _normalizeNumeroMedidor(numeroMedidor),
       'endereco': endereco,
       'is_interno': isInterno ? 1 : 0,
       'is_composto': isComposto ? 1 : 0,
@@ -65,5 +67,10 @@ class PontoConsumo {
       isComposto: (map['is_composto'] as int? ?? 0) == 1,
       isDesabitado: (map['is_desabitado'] as int? ?? 0) == 1,
     );
+  }
+
+  static String? _normalizeNumeroMedidor(String? value) {
+    final trimmed = value?.trim() ?? '';
+    return trimmed.isEmpty ? null : trimmed.toUpperCase();
   }
 }

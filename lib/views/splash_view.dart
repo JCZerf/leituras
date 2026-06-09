@@ -11,7 +11,8 @@ class SplashView extends StatefulWidget {
   State<SplashView> createState() => _SplashViewState();
 }
 
-class _SplashViewState extends State<SplashView> with SingleTickerProviderStateMixin {
+class _SplashViewState extends State<SplashView>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _opacity;
 
@@ -22,9 +23,10 @@ class _SplashViewState extends State<SplashView> with SingleTickerProviderStateM
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     );
-    _opacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
-    );
+    _opacity = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
 
     _controller.forward();
 
@@ -100,7 +102,7 @@ class _SplashViewState extends State<SplashView> with SingleTickerProviderStateM
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Versão 2.1.0',
+                      'Versão 2.2.0',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,

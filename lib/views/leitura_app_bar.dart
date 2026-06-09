@@ -4,8 +4,8 @@ import '../theme/app_colors.dart';
 
 /// Reusable AppBar with the Leituras identity.
 ///
-/// Uses the primary-action blue (#0056B3) background and white foreground for
-/// maximum outdoor contrast. The [toolbarHeight] is slightly taller than the
+/// Uses the black-and-white Leituras identity with maximum outdoor contrast.
+/// The [toolbarHeight] is slightly taller than the
 /// Material default so the title has breathing room in field conditions.
 ///
 /// ```dart
@@ -37,8 +37,8 @@ class LeituraAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return AppBar(
       toolbarHeight: _toolbarHeight,
-      backgroundColor: AppColors.lightGreenAppBar,
-      foregroundColor: AppColors.primaryText,
+      backgroundColor: AppColors.appBarBackground,
+      foregroundColor: AppColors.appBarForeground,
       elevation: 2,
       shadowColor: Colors.black54,
       centerTitle: false,
@@ -49,13 +49,13 @@ class LeituraAppBar extends StatelessWidget implements PreferredSizeWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: const TextStyle(
-          color: AppColors.primaryText,
+          color: AppColors.appBarForeground,
           fontSize: 20,
           fontWeight: FontWeight.w800,
         ),
       ),
-      iconTheme: const IconThemeData(color: AppColors.primaryText),
-      actionsIconTheme: const IconThemeData(color: AppColors.primaryText),
+      iconTheme: const IconThemeData(color: AppColors.appBarForeground),
+      actionsIconTheme: const IconThemeData(color: AppColors.appBarForeground),
       actions: actions,
     );
   }

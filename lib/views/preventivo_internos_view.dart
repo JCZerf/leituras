@@ -974,16 +974,6 @@ class _PontoInternoCard extends StatelessWidget {
     final isColetado = _checkColetado(item);
 
     final leitura = item.resumo.ultimaLeitura;
-    final readingText = leitura == null
-        ? 'Sem leitura'
-        : ponto.isComposto
-        ? isColetado
-              ? '03: ${leitura.valorLeitura} | 103: ${leitura.valorProducao ?? "-"}'
-              : 'Ultima 03: ${leitura.valorLeitura} | 103: ${leitura.valorProducao ?? "-"}'
-        : isColetado
-        ? 'Leitura: ${leitura.valorLeitura}'
-        : 'Última: ${leitura.valorLeitura}';
-
     return Card(
       color: AppColors.background,
       elevation: 0,
@@ -1066,9 +1056,7 @@ class _PontoInternoCard extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: isColetado
-                          ? AppColors.success
-                          : const Color(0xFFFFC107),
+                      color: isColetado ? AppColors.success : AppColors.warning,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -1083,16 +1071,45 @@ class _PontoInternoCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Text(
-                    readingText,
-                    style: TextStyle(
-                      color: leitura == null
-                          ? AppColors.secondaryText
-                          : AppColors.primaryText,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
+                  if (leitura != null && ponto.isComposto)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '03: ${leitura.valorLeitura}',
+                          style: const TextStyle(
+                            color: AppColors.primaryText,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '103: ${leitura.valorProducao ?? "-"}',
+                          style: const TextStyle(
+                            color: AppColors.primaryText,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    Text(
+                      leitura == null
+                          ? 'Sem leitura'
+                          : isColetado
+                          ? 'Leitura: ${leitura.valorLeitura}'
+                          : 'Última: ${leitura.valorLeitura}',
+                      style: TextStyle(
+                        color: leitura == null
+                            ? AppColors.secondaryText
+                            : AppColors.primaryText,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
-                  ),
                 ],
               ),
             ],
