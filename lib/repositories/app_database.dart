@@ -152,4 +152,5 @@ class AppDatabase {
     return '${local.year}-${two(local.month)}-${two(local.day)} '
         '${two(local.hour)}:${two(local.minute)}:${two(local.second)}';
   }
+
 }

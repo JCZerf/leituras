@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../repositories/app_database.dart';
 import '../repositories/grupo_repository.dart';
 import '../repositories/historico_leitura_repository.dart';
 import '../repositories/ponto_consumo_repository.dart';
@@ -13,11 +14,13 @@ import 'preventivo_internos_view.dart';
 class MainNavigation extends StatefulWidget {
   const MainNavigation({
     super.key,
+    required this.database,
     required this.grupoRepository,
     required this.pontoConsumoRepository,
     required this.historicoLeituraRepository,
   });
 
+  final AppDatabase database;
   final GrupoRepository grupoRepository;
   final PontoConsumoRepository pontoConsumoRepository;
   final HistoricoLeituraRepository historicoLeituraRepository;
@@ -73,7 +76,7 @@ class _MainNavigationState extends State<MainNavigation> {
               pontoConsumoRepository: widget.pontoConsumoRepository,
               historicoLeituraRepository: widget.historicoLeituraRepository,
             ),
-            const FerramentasView(),
+            FerramentasView(database: widget.database),
           ],
         ),
       ),

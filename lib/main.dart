@@ -22,14 +22,22 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   bool _initialized = false;
+  late final AppDatabase _database;
+  late final GrupoRepository _grupoRepository;
+  late final PontoConsumoRepository _pontoConsumoRepository;
+  late final HistoricoLeituraRepository _historicoLeituraRepository;
+
+  @override
+  void initState() {
+    super.initState();
+    _database = AppDatabase();
+    _grupoRepository = GrupoRepository(_database);
+    _pontoConsumoRepository = PontoConsumoRepository(_database);
+    _historicoLeituraRepository = HistoricoLeituraRepository(_database);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final database = AppDatabase();
-    final grupoRepository = GrupoRepository(database);
-    final pontoConsumoRepository = PontoConsumoRepository(database);
-    final historicoLeituraRepository = HistoricoLeituraRepository(database);
-
     return MaterialApp(
       title: 'Leituras',
       debugShowCheckedModeBanner: false,
@@ -92,9 +100,10 @@ class _MyAppState extends State<MyApp> {
       ),
       home: _initialized
           ? MainNavigation(
-              grupoRepository: grupoRepository,
-              pontoConsumoRepository: pontoConsumoRepository,
-              historicoLeituraRepository: historicoLeituraRepository,
+              database: _database,
+              grupoRepository: _grupoRepository,
+              pontoConsumoRepository: _pontoConsumoRepository,
+              historicoLeituraRepository: _historicoLeituraRepository,
             )
           : SplashView(
               onInitializationComplete: () {

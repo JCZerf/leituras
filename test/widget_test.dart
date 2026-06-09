@@ -18,6 +18,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: MainNavigation(
+          database: AppDatabase(),
           grupoRepository: _FakeGrupoRepository(groups: const []),
           pontoConsumoRepository: _FakePontoConsumoRepository(pontos: const []),
           historicoLeituraRepository: _FakeHistoricoRepository(
@@ -54,6 +55,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: MainNavigation(
+          database: AppDatabase(),
           grupoRepository: _FakeGrupoRepository(groups: [group]),
           pontoConsumoRepository: _FakePontoConsumoRepository(
             pontos: [
